@@ -4,3 +4,4 @@ tensorboard
 torchviz
 nltk
 torchinfo
+chardet
