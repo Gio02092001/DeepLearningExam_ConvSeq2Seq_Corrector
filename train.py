@@ -30,7 +30,9 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     train_loader = DataLoader(
         dataset,
         batch_sampler=batch_sampler,
-        collate_fn=collate_equal_length_fn
+        collate_fn=collate_equal_length_fn,
+        num_workers=8,
+        pin_memory=True
     )
     counter=1
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:

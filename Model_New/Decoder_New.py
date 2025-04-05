@@ -10,7 +10,6 @@ from Model_New.LayerModules_new import ConvolutionalBlock_New
 class Decoder_Attention_New(nn.Module):
     def __init__(self, hidden_dim,embedding_dim, p_dropout, kernel_width):
         super().__init__()
-        super().__init__()
         self.drop = nn.Dropout(p_dropout)
         self.conv = ConvolutionalBlock_New(hidden_dim, kernel_width, p_dropout)
         self.kernel_width = kernel_width
