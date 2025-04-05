@@ -1,0 +1,6 @@
+torch
+sacremoses
+tensorboard
+torchviz
+nltk
+torchinfo
