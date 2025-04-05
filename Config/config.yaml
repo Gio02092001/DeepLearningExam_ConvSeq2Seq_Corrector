@@ -1,0 +1,17 @@
+fixedNumberOfInputElements: 175
+embedding_dim: 16
+hidden_dim: 16
+kernel_width: 3
+validationSet: 0.01
+p_dropout: 0.1
+nestorovsMomentum: 0.99
+renormalizationLimit: 0.1
+learning_rate: 0.25
+maximumlearningRateLimit: 0.0001
+beamWidth: 5
+encoderLayer: 20
+decoderLayer: 20
+dataSet_Sentence: 1000
+dataSet_repetition: 10
+dataSet_probability: 0.1
+
