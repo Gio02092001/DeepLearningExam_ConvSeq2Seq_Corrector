@@ -5,3 +5,4 @@ torchviz
 nltk
 torchinfo
 chardet
+tensorflow
