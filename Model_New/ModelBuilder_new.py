@@ -49,7 +49,7 @@ class ConvModel_New(nn.Module):
 
         targetEmbedding_g = self.embeddingDecoder(target_input)
 
-        inputDecoder = self.linearDecoderInput(inputEmbedding_w)
+        inputDecoder = self.linearDecoderInput(targetEmbedding_g)
 
         decoder_attentionOutput = self.decoder_attentionBlocks(
             (inputDecoder, targetEmbedding_g, encoderOutput_z, c_inputEncoder)
