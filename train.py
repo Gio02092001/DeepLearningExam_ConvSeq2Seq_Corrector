@@ -32,6 +32,9 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     # Check if CUDA is available
     is_cuda = torch.cuda.is_available()
     timestamp = str(int(time.time()))
+    print("Num of CPU: ", cpu_count)
+    print("GPU available: ", is_cuda)
+    print("Timestamp: ", timestamp)
 
     # Convert it to a string
 
