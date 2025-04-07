@@ -97,6 +97,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             optimizer.step()
             epoch_loss += loss.item()
             global_step += 1
+            del source, target, loss
 
 
         print(f"Epoch {counter} finished, average loss: {epoch_loss / len(train_loader)}")
