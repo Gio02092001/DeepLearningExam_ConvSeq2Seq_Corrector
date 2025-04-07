@@ -25,7 +25,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     dataset = TranslationDataset(train_data, word_dict,target_word_dict, builder, tokenizer)
 
     # Create batches of equal length sequences
-    batch_sampler = create_memory_aware_batches(dataset, batch_size)
+    batch_sampler = create_memory_aware_batch_sampler(dataset, batch_size)
     # Check number of CPUs
     cpu_count = multiprocessing.cpu_count()
 
