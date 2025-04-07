@@ -31,13 +31,16 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
     # Check if CUDA is available
     is_cuda = torch.cuda.is_available()
+    timestamp = str(int(time.time()))
+
+    # Convert it to a string
 
     # Decide number of workers
     # Decide number of workers
     if is_cuda:
         # On GPU: use more workers, but not more than available CPUs
         workers = min(8, cpu_count)
-        log_dir = "/content/drive/MyDrive/runs"
+        log_dir = "/content/drive/MyDrive/runs/"+ timestamp
         writer = SummaryWriter(log_dir=log_dir)
     else:
         # On CPU: use fewer workers
