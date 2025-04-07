@@ -55,6 +55,7 @@ def main():
         config["p_dropout"], config["hidden_dim"], config["kernel_width"], config["encoderLayer"],
         config["decoderLayer"], builder.sourceUNK, device
     )
+
     model.to(device)
 
     optimizer = torch.optim.SGD(

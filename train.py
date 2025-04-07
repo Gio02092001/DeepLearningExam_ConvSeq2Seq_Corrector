@@ -1,3 +1,4 @@
+import multiprocessing
 import time
 from datetime import datetime
 import random
@@ -25,14 +26,27 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
     # Create batches of equal length sequences
     batch_sampler = create_equal_length_batches(dataset, batch_size)
+    # Check number of CPUs
+    cpu_count = multiprocessing.cpu_count()
 
-    # Create DataLoader with custom batch sampler
+    # Check if CUDA is available
+    is_cuda = torch.cuda.is_available()
+
+    # Decide number of workers
+    if is_cuda:
+        # On GPU: use more workers, but not more than available CPUs
+        workers = min(8, cpu_count)
+    else:
+        # On CPU: use fewer workers
+        workers = min(4, cpu_count // 2)
+
+    # DataLoader
     train_loader = DataLoader(
         dataset,
         batch_sampler=batch_sampler,
         collate_fn=collate_equal_length_fn,
-        num_workers=8,
-        pin_memory=True
+        num_workers=workers,
+        pin_memory=is_cuda  # Only pin memory if using GPU
     )
     counter=1
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:
