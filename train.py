@@ -205,11 +205,53 @@ def get_max_tokens_per_batch():
 
 
 # Example usage
-def create_memory_aware_batches(dataset, batch_size=64):
+def create_memory_aware_batch_sampler(dataset, batch_size=64):
+    """
+    Creates a batch sampler that's aware of memory constraints.
+
+    Args:
+        dataset: The TranslationDataset
+        batch_size: Maximum number of sequences per batch
+
+    Returns:
+        A list of batch indices respecting memory constraints
+    """
+    # Get available memory and calculate max tokens per batch
     max_tokens = get_max_tokens_per_batch()
     print(f"Using maximum of {max_tokens} tokens per batch based on available memory")
-    return create_equal_length_batches(dataset, batch_size, max_tokens)
 
+    # Group indices by source sequence length
+    indices_by_length = {}
+    for idx in range(len(dataset)):
+        source_len = len(dataset.data[idx][0])
+        if source_len not in indices_by_length:
+            indices_by_length[source_len] = []
+        indices_by_length[source_len].append(idx)
+
+    # Create batches of equal length sequences with memory constraints
+    batches = []
+    for length, indices in indices_by_length.items():
+        # Calculate tokens per sequence (source + target)
+        # Multiply by 2 since we need memory for both source and target
+        tokens_per_batch = length * 2
+
+        # Calculate max sequences for this length
+        max_seqs_per_batch = min(batch_size, max_tokens // tokens_per_batch)
+
+        # Ensure we can process at least one sequence
+        if max_seqs_per_batch == 0:
+            max_seqs_per_batch = 1
+            print(f"Warning: Sequence of length {length} exceeds token limit. Processing one at a time.")
+
+        # Split indices into batches
+        for i in range(0, len(indices), max_seqs_per_batch):
+            batch_indices = indices[i:i + max_seqs_per_batch]
+            if batch_indices:  # Ensure batch is not empty
+                batches.append(batch_indices)
+
+    # Shuffle the batches
+    random.shuffle(batches)
+    return batches
 
 def collate_equal_length_fn(batch):
     """
