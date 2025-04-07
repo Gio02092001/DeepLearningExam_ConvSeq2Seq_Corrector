@@ -249,7 +249,7 @@ def create_memory_aware_batch_sampler(dataset, batch_size=64):
         max_seqs_per_batch = min(batch_size, max_tokens // tokens_per_seq)
 
         # Safety: ensure batch size is at least 1 but no more than 8
-        max_seqs_per_batch = max(1, min(max_seqs_per_batch, 8))
+        max_seqs_per_batch = max(1, min(max_seqs_per_batch, batch_size))
 
         for i in range(0, len(indices), max_seqs_per_batch):
             batch_indices = indices[i:i + max_seqs_per_batch]

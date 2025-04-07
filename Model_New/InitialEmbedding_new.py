@@ -51,8 +51,8 @@ class Embedding(nn.Module):
         output_tensor = word_embeddings + positional_embeddings
 
         # Log if unknown tokens were used
-        if unknown_mask.any():
-            print(f"Used unknown token for {unknown_mask.sum().item()} positions")
+        #if unknown_mask.any():
+        #    print(f"Used unknown token for {unknown_mask.sum().item()} positions")
 
         return output_tensor
 
