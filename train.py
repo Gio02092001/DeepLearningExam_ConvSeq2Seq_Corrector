@@ -1,4 +1,6 @@
+import gc
 import multiprocessing
+import os
 import time
 from datetime import datetime
 import random
@@ -17,16 +19,17 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     print("Training started.")
     model.train()
     loss_fn = torch.nn.CrossEntropyLoss(reduction="mean")  # Standard loss, no need to ignore padding
-
+    os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     tokenizer = MosesTokenizer('en')
     global_step = 0
 
     # Create dataset
     dataset = TranslationDataset(train_data, word_dict,target_word_dict, builder, tokenizer)
-
+    print("Dataset created")
     # Create batches of equal length sequences
     batch_sampler = create_memory_aware_batch_sampler(dataset, batch_size)
     # Check number of CPUs
+    print("Batch sampler created")
     cpu_count = multiprocessing.cpu_count()
 
     # Check if CUDA is available
@@ -66,6 +69,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         # Iterate through batches
         for batch_idx, batch in enumerate(train_loader):
             optimizer.zero_grad()
+            gc.collect()
+            torch.cuda.empty_cache()
 
             source = batch['source'].to(model.device)
             target = batch['target'].to(model.device)
