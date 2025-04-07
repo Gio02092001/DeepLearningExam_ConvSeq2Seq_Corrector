@@ -17,7 +17,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     print("Training started.")
     model.train()
     loss_fn = torch.nn.CrossEntropyLoss(reduction="mean")  # Standard loss, no need to ignore padding
-    writer = SummaryWriter()
+
     tokenizer = MosesTokenizer('en')
     global_step = 0
 
@@ -33,12 +33,16 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     is_cuda = torch.cuda.is_available()
 
     # Decide number of workers
+    # Decide number of workers
     if is_cuda:
         # On GPU: use more workers, but not more than available CPUs
         workers = min(8, cpu_count)
+        log_dir = "/content/drive/MyDrive/runs"
+        writer = SummaryWriter(log_dir=log_dir)
     else:
         # On CPU: use fewer workers
         workers = min(4, cpu_count // 2)
+        writer = SummaryWriter()
 
     # DataLoader
     train_loader = DataLoader(
