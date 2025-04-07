@@ -207,20 +207,25 @@ def get_max_tokens_per_batch():
         return 4096
 
 
-# Example usage
 def create_memory_aware_batch_sampler(dataset, batch_size=64):
     """
-    Creates a batch sampler that's aware of memory constraints.
-
-    Args:
-        dataset: The TranslationDataset
-        batch_size: Maximum number of sequences per batch
-
-    Returns:
-        A list of batch indices respecting memory constraints
+    Creates a batch sampler with more aggressive memory constraints
     """
-    # Get available memory and calculate max tokens per batch
-    max_tokens = get_max_tokens_per_batch()
+    # Make token limit very conservative
+    if torch.cuda.is_available():
+        device = torch.cuda.current_device()
+        total_memory = torch.cuda.get_device_properties(device).total_memory
+        free_memory = total_memory - torch.cuda.memory_allocated(device)
+
+        # Very conservative estimate (20% of free memory)
+        token_size_bytes = 64  # Higher estimate considering optimizer states
+        max_tokens = int((free_memory * 0.2) / token_size_bytes)
+
+        # Hard cap to avoid large batches
+        max_tokens = min(max_tokens, 2048)
+    else:
+        max_tokens = 1024  # Conservative default for CPU
+
     print(f"Using maximum of {max_tokens} tokens per batch based on available memory")
 
     # Group indices by source sequence length
@@ -231,22 +236,16 @@ def create_memory_aware_batch_sampler(dataset, batch_size=64):
             indices_by_length[source_len] = []
         indices_by_length[source_len].append(idx)
 
-    # Create batches of equal length sequences with memory constraints
+    # Create batches of equal length sequences
     batches = []
-    for length, indices in indices_by_length.items():
-        # Calculate tokens per sequence (source + target)
-        # Multiply by 2 since we need memory for both source and target
-        tokens_per_batch = length * 2
+    for length, indices in sorted(indices_by_length.items()):
+        # Calculate how many sequences we can fit in a batch
+        tokens_per_seq = length * 4  # Account for source, target, and optimizer states
+        max_seqs_per_batch = min(batch_size, max_tokens // tokens_per_seq)
 
-        # Calculate max sequences for this length
-        max_seqs_per_batch = min(batch_size, max_tokens // tokens_per_batch)
+        # Safety: ensure batch size is at least 1 but no more than 8
+        max_seqs_per_batch = max(1, min(max_seqs_per_batch, 8))
 
-        # Ensure we can process at least one sequence
-        if max_seqs_per_batch == 0:
-            max_seqs_per_batch = 1
-            print(f"Warning: Sequence of length {length} exceeds token limit. Processing one at a time.")
-
-        # Split indices into batches
         for i in range(0, len(indices), max_seqs_per_batch):
             batch_indices = indices[i:i + max_seqs_per_batch]
             if batch_indices:  # Ensure batch is not empty
