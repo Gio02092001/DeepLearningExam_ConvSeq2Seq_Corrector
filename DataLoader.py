@@ -33,50 +33,44 @@ class TranslationDataset(Dataset):
 
 
 
-def create_memory_aware_batch_sampler(dataset, batch_size=64):
+
+def create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size=64):
     """
-    Creates a batch sampler with more aggressive memory constraints
+    Create batches where all sequences within a batch have exactly the same length.
+    No padding needed.
+
+    Args:
+        dataset: The TranslationDataset
+        batch_size: Maximum number of sequences per batch
+
+    Returns:
+        List of batch indices
     """
     # Group indices by source sequence length
     indices_by_length = {}
+
     for idx in range(len(dataset)):
+
         source_len = len(dataset.data[idx][0])
+        if source_len > fixedNumberOfInputElements:
+            continue
         if source_len not in indices_by_length:
             indices_by_length[source_len] = []
         indices_by_length[source_len].append(idx)
-    # Make token limit very conservative
-    if torch.cuda.is_available():
-        device = torch.cuda.current_device()
-        total_memory = torch.cuda.get_device_properties(device).total_memory
-        free_memory = total_memory - torch.cuda.memory_allocated(device)
-
-        # Very conservative estimate (20% of free memory)
-        token_size_bytes = 16  # Higher estimate considering optimizer states
-        max_tokens = int((free_memory * 0.9) / token_size_bytes)
-        print(f"Using maximum of {max_tokens} tokens per batch based on available memory on CUDA")
-
 
     # Create batches of equal length sequences
     batches = []
-    for length, indices in sorted(indices_by_length.items()):
-        # Calculate how many sequences we can fit in a batch
-        if torch.cuda.is_available():
-            tokens_per_seq = length * 4  # Account for source, target, and optimizer states
-            max_seqs_per_batch = min(batch_size, max_tokens // tokens_per_seq)
-
-            # Safety: ensure batch size is at least 1 but no more than 8
-            max_seqs_per_batch = max(1, min(max_seqs_per_batch, batch_size))
-        else:
-            max_seqs_per_batch=batch_size
-
-        for i in range(0, len(indices)):
-            batch_indices = indices[i:i + max_seqs_per_batch]
+    for length, indices in indices_by_length.items():
+        # Split into batches of batch_size
+        for i in range(0, len(indices), batch_size):
+            batch_indices = indices[i:i + batch_size]
             if batch_indices:  # Ensure batch is not empty
                 batches.append(batch_indices)
 
     # Shuffle the batches
     random.shuffle(batches)
     return batches
+
 
 def collate_equal_length_fn(batch):
     """

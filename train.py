@@ -11,12 +11,12 @@ from torch.utils.data import DataLoader
 from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
 
-from DataLoader import TranslationDataset, collate_equal_length_fn, create_memory_aware_batch_sampler
+from DataLoader import TranslationDataset, collate_equal_length_fn, create_equal_length_batches
 from validation import validation
 
 
 def train(model, optimizer, scheduler, train_data, builder, word_dict, renormalizationLimit, maximumlearningRateLimit,
-          target_word_dict,validation_data, batch_size=64):
+          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size=64):
     print("Training started.")
     model.train()
     loss_fn = torch.nn.CrossEntropyLoss(reduction="mean")  # Standard loss, no need to ignore padding
@@ -28,7 +28,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     dataset = TranslationDataset(train_data, word_dict,target_word_dict, builder, tokenizer)
     print("Dataset created")
     # Create batches of equal length sequences
-    batch_sampler = create_memory_aware_batch_sampler(dataset, batch_size)
+    batch_sampler = create_equal_length_batches(dataset,fixedNumberOfInputElements, batch_size)
     # Check number of CPUs
     print("Batch sampler created")
     cpu_count = multiprocessing.cpu_count()
@@ -65,7 +65,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     epochNumber=1
     best_validationOutput=0
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:
-        validation_output = validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder)
+        #validation_output = validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder)
         print(f"Current learning rate: {optimizer.param_groups[0]['lr']}")
         epoch_loss = 0.0
 
@@ -106,7 +106,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
 
         print(f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(train_loader)}")
-        validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder)
+        validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements)
         startFineTuning=False
         if epochNumber>1:
             if startFineTuning==False:

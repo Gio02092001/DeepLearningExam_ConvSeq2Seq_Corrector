@@ -6,10 +6,10 @@ import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from DataLoader import TranslationDataset, create_memory_aware_batch_sampler, collate_equal_length_fn
+from DataLoader import TranslationDataset, create_equal_length_batches, collate_equal_length_fn
 
 
-def validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, batch_size=64):
+def validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder,fixedNumberOfInputElements, batch_size=64):
     print("Validation started.")
     model.eval()
     loss_fn = torch.nn.CrossEntropyLoss()  # Standard loss, no need to ignore padding
@@ -19,7 +19,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
     dataset = TranslationDataset(validation_data, word_dict, target_word_dict, builder, tokenizer)
     print("Dataset created")
     # Create batches of equal length sequences
-    batch_sampler = create_memory_aware_batch_sampler(dataset, batch_size)
+    batch_sampler = create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size)
     # Check number of CPUs
     print("Batch sampler created")
     cpu_count = multiprocessing.cpu_count()
@@ -90,7 +90,12 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
 
         # After the loop, stack the sequence
         predictedSequence = torch.cat(predictedSequence, dim=1)  # Shape: (batch_size, max_output_length)
-        print(predictedSequence)
+        #print(predictedSequence)
+
+        # Token-Level Accuracy
+        min_len = min(predictedSequence.shape[1], target.shape[1])
+        correct_tokens += (predictedSequence[:, :min_len] == target[:, :min_len]).sum().item()
+        total_tokens += min_len * sourceBatchSize
 
         """POI QUANDO QUESTO FUNZIONA CAMBIA ARGMAX PER BEAM SEARCH"""
         # Calculate loss
@@ -102,10 +107,12 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
 
         loss = loss_fn(logits_flat, target_flat)
         perplexity = torch.exp(loss)
+        token_accuracy = correct_tokens / total_tokens if total_tokens > 0 else 0.0
         writer.add_scalar('Loss/validation', loss.item(), global_step=global_step)
         writer.add_scalar('Perplexity/validation', perplexity, global_step=global_step)
+        writer.add_scalar('accuracy/validation', token_accuracy, global_step=global_step)
         print(
-            f"VALIDATION Batch {batch_idx}, Loss: {loss.item()}, Perplexity: {perplexity}, Batch size: {source.size(0)}, Sequence length: {source.size(1)}")
+            f"VALIDATION Batch {batch_idx}, Loss: {loss.item()}, Perplexity: {perplexity}, Accuracy: {token_accuracy*100} , Batch size: {source.size(0)}, Sequence length: {source.size(1)}")
         # Backward pass
 
         epoch_loss += loss.item()

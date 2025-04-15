@@ -65,7 +65,7 @@ def main():
 
     # Execute model training
     train(model, optimizer, scheduler, train_data, builder, word_dict, config["renormalizationLimit"],
-          config["maximumlearningRateLimit"], target_word_dict, validation_data)
+          config["maximumlearningRateLimit"], target_word_dict, validation_data, config["fixedNumberOfInputElements"])
 
 
 if __name__ == "__main__":
