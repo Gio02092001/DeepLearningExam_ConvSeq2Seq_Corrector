@@ -38,6 +38,13 @@ class BuildDictionary_Map:
         word_dict = load_pickle(f'data/dictionaries/{sentence}_word_to_index.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"])
         target_word_dict = load_pickle(f'data/dictionaries/{sentence}target_word_to_index.pkl',
                                        ["<sos>", "<eos>", "<pad>"])
+        self.sourceSOS = word_dict["<sos>"]
+        self.sourceEOS = word_dict["<eos>"]
+        self.sourcePAD = word_dict["<pad>"]
+        self.sourceUNK = word_dict["<unk>"]
+        self.targetSOS = target_word_dict["<sos>"]
+        self.targetEOS = target_word_dict["<eos>"]
+        self.targetPAD = target_word_dict["<pad>"]
 
         try:
             with open(f'data/dictionaries/{sentence}x{rep}x{p}_SentenceMap.pkl', 'rb') as f:
