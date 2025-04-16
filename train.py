@@ -124,7 +124,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         print(
             f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(train_loader)}, Accuracy: {accuracy * 100:.2f}%")
 
-        validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, batch_size)
+        validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, writer, batch_size)
 
         if epochNumber>1:
             if startFineTuning==False:

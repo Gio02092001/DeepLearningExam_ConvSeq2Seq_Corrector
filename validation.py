@@ -13,7 +13,7 @@ from DataLoader import TranslationDataset, create_equal_length_batches, collate_
 PER_BEAM_SEARCH = """POI QUANDO QUESTO FUNZIONA CAMBIA ARGMAX PER BEAM SEARCH"""
 
 
-def validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder,fixedNumberOfInputElements,epochNumber, batch_size=64):
+def validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder,fixedNumberOfInputElements,epochNumber,writer, batch_size=64):
     print("Validation started.")
     model.eval()
     #loss_fn = torch.nn.CrossEntropyLoss()  # Standard loss, no need to ignore padding
@@ -42,12 +42,10 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
     if is_cuda:
         # On GPU: use more workers, but not more than available CPUs
         workers = min(8, cpu_count)
-        log_dir = "/content/drive/MyDrive/runs/" + timestamp
-        writer = SummaryWriter(log_dir=log_dir)
+
     else:
         # On CPU: use fewer workers
         workers = min(4, cpu_count // 2)
-        writer = SummaryWriter()
 
     # DataLoader
     validationLoader = DataLoader(

@@ -9,8 +9,8 @@ renormalizationLimit: 0.1
 learning_rate: 0.25
 maximumlearningRateLimit: 0.0001
 beamWidth: 5
-encoderLayer: 10
-decoderLayer: 10
+encoderLayer: 15
+decoderLayer: 15
 dataSet_Sentence: 10000
 dataSet_repetition: 5
 dataSet_probability: 0.1
