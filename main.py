@@ -1,7 +1,7 @@
 import torch
 import yaml
 from sacremoses import MosesTokenizer
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import StepLR, LambdaLR
 
 from Model_New.ModelBuilder_new import ConvModel_New
 from BuildDictionary_Map import BuildDictionary_Map
@@ -61,7 +61,7 @@ def main():
     optimizer = torch.optim.SGD(
         model.parameters(), lr=config["learning_rate"], momentum=config["nestorovsMomentum"], nesterov=True
     )
-    scheduler = StepLR(optimizer, step_size=1, gamma=0.1)
+    scheduler = LambdaLR(optimizer, lr_lambda=lambda epoch: 1.0)
 
     # Execute model training
     train(model, optimizer, scheduler, train_data, builder, word_dict, config["renormalizationLimit"],

@@ -64,10 +64,13 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     )
     epochNumber=1
     best_validationOutput=0
+    startFineTuning = False
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:
-        #validation_output = validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder)
+        #validation_output = validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, batch_size)
         print(f"Current learning rate: {optimizer.param_groups[0]['lr']}")
         epoch_loss = 0.0
+        correct_tokens = 0  # Inizializza il contatore dei token corretti
+        total_tokens = 0
 
         # Iterate through batches
         for batch_idx, batch in enumerate(train_loader):
@@ -90,12 +93,20 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
             loss = loss_fn(logits_flat, target_flat)
             writer.add_scalar('Loss/train', loss.item(), global_step=global_step)
+            # Token-Level Accuracy
+            predicted_tokens = torch.argmax(logits, dim=-1)
+            correct_tokens_batch= (predicted_tokens == target).sum().item()# Predetti token per ogni sequenza
+            correct_tokens += correct_tokens_batch  # Confronto token per token
+            total_tokens_batch=target.numel()
+            total_tokens += total_tokens_batch  # Conta il numero totale di token nel batch
+            accuracy_batch = correct_tokens_batch / total_tokens_batch if total_tokens_batch > 0 else 0.0
+            writer.add_scalar('Accuracy/train', accuracy_batch, global_step=global_step)
             print(
-                f"Batch {batch_idx}, Loss: {loss.item()}, Batch size: {source.size(0)}, Sequence length: {source.size(1)}")
+                f"Batch {batch_idx}, Loss: {loss.item()}, Batch size: {source.size(0)}, Accuracy: {accuracy_batch}, Sequence length: {source.size(1)}")
             # Backward pass
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=renormalizationLimit)
-
+            grad_norm=torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=renormalizationLimit)
+            writer.add_scalar('GradNorm/train', grad_norm, global_step=global_step)
 
             optimizer.step()
             epoch_loss += loss.item()
@@ -105,9 +116,13 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             gc.collect()
 
 
-        print(f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(train_loader)}")
+
+        accuracy = correct_tokens / total_tokens if total_tokens > 0 else 0.0
+        print(
+            f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(train_loader)}, Accuracy: {accuracy * 100:.2f}%")
+
         validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements)
-        startFineTuning=False
+        best_validationOutput = validation_output
         if epochNumber>1:
             if startFineTuning==False:
                 if validation_output<best_validationOutput:
@@ -117,8 +132,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     startFineTuning=True
             else:
                 scheduler.step()
-        else:
-            best_validationOutput=validation_output
+
 
 
         epochNumber+=1

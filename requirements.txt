@@ -6,3 +6,5 @@ nltk
 torchinfo
 chardet
 tensorflow
+sacrebleu
+rouge_score
