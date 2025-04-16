@@ -13,7 +13,7 @@ from DataLoader import TranslationDataset, create_equal_length_batches, collate_
 PER_BEAM_SEARCH = """POI QUANDO QUESTO FUNZIONA CAMBIA ARGMAX PER BEAM SEARCH"""
 
 
-def validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder,fixedNumberOfInputElements, batch_size=64):
+def validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder,fixedNumberOfInputElements,epochNumber, batch_size=64):
     print("Validation started.")
     model.eval()
     #loss_fn = torch.nn.CrossEntropyLoss()  # Standard loss, no need to ignore padding
@@ -201,7 +201,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
     writer.add_scalar('ROUGEL/validation_epoch', sum(rougeL) / len(rougeL), global_step=counter)
     epoch_perplexity=epoch_perplexity/ len(validationLoader)
 
-    print(f"Epoch {counter} finished, average loss: {epoch_loss / len(validationLoader)}")
+    print(f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(validationLoader)}")
     print(f"Epoch perplexity: {epoch_perplexity}")
     return epoch_perplexity
 
