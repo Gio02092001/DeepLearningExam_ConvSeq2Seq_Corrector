@@ -93,6 +93,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
             loss = loss_fn(logits_flat, target_flat)
             writer.add_scalar('Loss/train', loss.item(), global_step=global_step)
+            writer.flush()
             # Token-Level Accuracy
             predicted_tokens = torch.argmax(logits, dim=-1)
             correct_tokens_batch= (predicted_tokens == target).sum().item()# Predetti token per ogni sequenza
@@ -101,12 +102,14 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             total_tokens += total_tokens_batch  # Conta il numero totale di token nel batch
             accuracy_batch = correct_tokens_batch / total_tokens_batch if total_tokens_batch > 0 else 0.0
             writer.add_scalar('Accuracy/train', accuracy_batch, global_step=global_step)
+            writer.flush()
             print(
                 f"Batch {batch_idx}, Loss: {loss.item()}, Batch size: {source.size(0)}, Accuracy: {accuracy_batch}, Sequence length: {source.size(1)}")
             # Backward pass
             loss.backward()
             grad_norm=torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=renormalizationLimit)
             writer.add_scalar('GradNorm/train', grad_norm, global_step=global_step)
+            writer.flush()
 
             optimizer.step()
             epoch_loss += loss.item()

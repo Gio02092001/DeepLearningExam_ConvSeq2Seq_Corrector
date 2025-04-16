@@ -158,6 +158,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
             token_accuracy = correct_tokens / total_tokens if total_tokens > 0 else 0.0
             writer.add_scalar('Loss/validation_batch', average_nll, global_step=global_step)
             writer.add_scalar('accuracy/validation_batch', token_accuracy, global_step=global_step)
+            writer.flush()
 
             print(
                 f"VALIDATION Batch {batch_idx}, Loss: {average_nll}, Perplexity: {perplexity}, Accuracy: {token_accuracy*100} , Batch size: {source.size(0)}, Sequence length: {source.size(1)}")
@@ -166,6 +167,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
             #epoch_loss += loss.item()
             epoch_perplexity +=perplexity
             writer.add_scalar('Perplexity/validation_epoch', epoch_perplexity, global_step=counter)
+            writer.flush()
 
             global_step += 1
 
@@ -199,6 +201,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
     writer.add_scalar('ROUGE1/validation_epoch', sum(rouge1) / len(rouge1), global_step=counter)
     writer.add_scalar('ROUGE2/validation_epoch', sum(rouge2) / len(rouge2), global_step=counter)
     writer.add_scalar('ROUGEL/validation_epoch', sum(rougeL) / len(rougeL), global_step=counter)
+    writer.flush()
     epoch_perplexity=epoch_perplexity/ len(validationLoader)
 
     print(f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(validationLoader)}")
