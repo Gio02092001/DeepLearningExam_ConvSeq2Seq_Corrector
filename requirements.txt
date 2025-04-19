@@ -1,10 +1,3 @@
-torch
-sacremoses
-tensorboard
-torchviz
-nltk
-torchinfo
-chardet
-tensorflow
-sacrebleu
-rouge_score
+version https://git-lfs.github.com/spec/v1
+oid sha256:5e79b03073f78a62b28e19e1f63a49ada1b81e7077b1e6905bfff55d8b7f8539
+size 102
