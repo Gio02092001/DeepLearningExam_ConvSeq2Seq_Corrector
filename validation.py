@@ -119,8 +119,8 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
             epoch_loss += average_nll
 
             # Token-Level Accuracy
-            #min_len = min(predictedSequence.shape[1], target.shape[1])
-            correct_tokens += (predictedSequence[:, :predictedSequence.shape[1]] == target[:, :target.shape[1]]).sum().item()
+            min_len = min(predictedSequence.shape[1], target.shape[1])
+            correct_tokens += (predictedSequence[:, :min_len] == target[:, :min_len]).sum().item()
 
 
 
