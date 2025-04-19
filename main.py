@@ -61,7 +61,7 @@ def main():
     optimizer = torch.optim.SGD(
         model.parameters(), lr=config["learning_rate"], momentum=config["nestorovsMomentum"], nesterov=True
     )
-    scheduler = LambdaLR(optimizer, lr_lambda=lambda epoch: 1.0)
+    scheduler = LambdaLR(optimizer, lr_lambda=lambda step: 0.1 ** step)
 
     # Execute model training
     train(model, optimizer, scheduler, train_data, builder, word_dict, config["renormalizationLimit"],

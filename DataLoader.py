@@ -54,6 +54,8 @@ def create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size=
         source_len = len(dataset.data[idx][0])
         if source_len > fixedNumberOfInputElements:
             continue
+        if source_len < 2:
+            continue
         if source_len not in indices_by_length:
             indices_by_length[source_len] = []
         indices_by_length[source_len].append(idx)
