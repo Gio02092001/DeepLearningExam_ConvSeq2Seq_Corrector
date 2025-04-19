@@ -81,12 +81,13 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
             targetInput = torch.full((sourceBatchSize, 1), builder.targetSOS, dtype=torch.long, device=model.device)
 
             # Placeholder to collect predictions
-            predictedSequence = []
+            #predictedSequence = []
             log_probs_collected = []
             all_predictions = []
             all_references = []
-
-            for step in range(source.shape[1]):  # You should define this limit!
+            predicted_ids, total_nll, total_tokens = beamSearch(model, source, beam_width=5, builder=builder)
+            predictedSequence = torch.tensor(predicted_ids, dtype=torch.long, device=model.device)
+            """for step in range(source.shape[1]):  # You should define this limit!
                 predictions, logits = model(source, targetInput)
 
                 log_probs = torch.log_softmax(logits[:, -1, :], dim=-1)
@@ -99,17 +100,23 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
                 next_tokens = torch.argmax(log_probs, dim=1, keepdim=True)
                 targetInput = torch.cat([targetInput, next_tokens], dim=1)
 
-                predictedSequence.append(next_tokens)
+                predictedSequence.append(next_tokens)"""
 
             total_nll += total_nll_batch
             total_tokens += total_tokens_batch
 
             # After the loop, stack the sequence
-            predictedSequence = torch.cat(predictedSequence, dim=-1)  # Shape: (batch_size, max_output_length)
+            #predictedSequence = torch.cat(predictedSequence, dim=-1)  # Shape: (batch_size, max_output_length)
             #print(predictedSequence)
             # Stack all log probabilities
-            average_nll = total_nll / total_tokens
-            perplexity = math.exp(average_nll)
+            if total_tokens > 0:
+                average_nll = total_nll / total_tokens
+                perplexity = math.exp(average_nll)
+            else:
+                average_nll = float('nan')
+                perplexity = float('nan')
+
+            epoch_loss += average_nll
 
             # Token-Level Accuracy
             min_len = min(predictedSequence.shape[1], target.shape[1])
@@ -126,6 +133,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
                     if  word in ["<pad>", "<sos>", "<eos>"]:
                         continue
                     sentence.append(word)
+                print("Prediction: ", " ".join(sentence))
                 pred_sentences.append(" ".join(sentence))
 
             ref_sentences= []
@@ -136,6 +144,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
                     if  word in ["<pad>", "<sos>", "<eos>"]:
                         continue
                     sentence.append(word)
+                print("Reference: ", " ".join(sentence))
                 ref_sentences.append(" ".join(sentence))
 
             all_predictions.extend(pred_sentences)
@@ -158,8 +167,8 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
             writer.add_scalar('accuracy/validation_batch', token_accuracy, global_step=global_step)
             writer.flush()
 
-            print(
-                f"VALIDATION Batch {batch_idx}, Loss: {average_nll}, Perplexity: {perplexity}, Accuracy: {token_accuracy*100} , Batch size: {source.size(0)}, Sequence length: {source.size(1)}")
+            #print(
+            #    f"VALIDATION Batch {batch_idx}, Loss: {average_nll}, Perplexity: {perplexity}, Accuracy: {token_accuracy*100} , Batch size: {source.size(0)}, Sequence length: {source.size(1)}")
             # Backward pass
 
             #epoch_loss += loss.item()
@@ -169,7 +178,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
 
             global_step += 1
 
-            del source, target, logits, predictions
+            del source, target
             torch.cuda.empty_cache()
             gc.collect()
         # Dopo aver completato il ciclo sui batch:
@@ -206,3 +215,83 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
     print(f"Epoch perplexity: {epoch_perplexity}")
     return epoch_perplexity
 
+def beamSearch(model, source, beam_width, builder, max_output_length=100):
+    """
+    Esegue Beam Search su un batch di sequenze sorgenti.
+
+    Args:
+        model: Il tuo modello Seq2Seq.
+        source: Tensor di input (batch_size, source_len).
+        beam_width: Numero di ipotesi da mantenere per frase.
+        builder: Oggetto con targetSOS.
+        max_output_length: Lunghezza massima della sequenza generata.
+
+    Returns:
+        final_sequences: Lista di liste di token_id predetti.
+    """
+    batch_size = source.shape[0]
+    device = model.device
+
+    # Inizializza le sequenze con solo SOS token
+    sequences = torch.full((batch_size, beam_width, 1), builder.targetSOS, dtype=torch.long, device=device)
+    scores = torch.zeros((batch_size, beam_width), dtype=torch.float, device=device)
+
+    # Variabili per NLL e tokens
+    total_nll = 0.0
+    total_tokens = 0
+
+    for step in range(max_output_length):
+        num_candidates = sequences.size(1)  # beam_width
+
+        # Preparazione input per il modello
+        input_seq = sequences.view(batch_size * num_candidates, -1)
+        source_repeated = source.unsqueeze(1).repeat(1, num_candidates, 1).view(batch_size * num_candidates, -1)
+
+        # Model forward
+        _, logits = model(source_repeated, input_seq)
+        log_probs = torch.log_softmax(logits[:, -1, :], dim=-1)
+
+        # Aggiorna i punteggi sommando log_probs
+        expanded_scores = scores.view(-1, 1) + log_probs  # [batch_size * beam_width, vocab_size]
+
+        # Seleziona le migliori beam_width ipotesi per frase
+        expanded_scores = expanded_scores.view(batch_size, -1)
+        top_scores, top_indices = torch.topk(expanded_scores, beam_width, dim=-1)
+
+        # Calcola NLL per il passo corrente
+        nll = -top_scores.sum().item()  # Somma dei log dei punteggi
+        total_nll += nll
+
+        # Aggiungi il numero di token per il passo corrente
+        total_tokens += batch_size * beam_width  # Ogni candidato ha un token
+
+        # Ricostruisci le nuove sequenze
+        beam_indices = top_indices // log_probs.shape[-1]
+        token_indices = top_indices % log_probs.shape[-1]
+
+        new_sequences = []
+        for i in range(batch_size):
+            temp = []
+            for b in range(beam_width):
+                old_seq = sequences[i, beam_indices[i, b]].tolist()
+                token = token_indices[i, b].item()
+                temp.append(old_seq + [token])
+            new_sequences.append(temp)
+
+        sequences = torch.tensor(new_sequences, dtype=torch.long, device=device)
+        scores = top_scores
+
+    # Normalizza per lunghezza e scegli la sequenza migliore
+    normalized_scores = scores / sequences.size(-1)
+    best_indices = normalized_scores.argmax(dim=1)
+
+    final_sequences = []
+    for i in range(batch_size):
+        best_seq = sequences[i, best_indices[i]].tolist()
+        final_sequences.append(best_seq)
+
+    # Dopo la generazione, calcola la perdita media
+    average_nll = total_nll / total_tokens if total_tokens > 0 else 0.0
+    print(f"Total NLL: {total_nll}, Total Tokens: {total_tokens}, Average NLL per Token: {average_nll}")
+
+    return final_sequences, total_nll, total_tokens

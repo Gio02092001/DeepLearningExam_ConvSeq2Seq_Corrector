@@ -66,7 +66,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     best_validationOutput=0
     startFineTuning = False
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:
-        #validation_output = validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, batch_size)
+        #validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, writer, batch_size)
         print(f"Current learning rate: {optimizer.param_groups[0]['lr']}")
         epoch_loss = 0.0
         correct_tokens = 0  # Inizializza il contatore dei token corretti
@@ -91,16 +91,26 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             logits_flat = logits.reshape(batch_size * seq_len, target_vocab_size)
             target_flat = target.reshape(batch_size * seq_len)
 
+            # Mask for excluding SOS and EOS tokens
+            SOS_ID = builder.targetSOS
+            EOS_ID = builder.targetEOS
+            mask = (target_flat != SOS_ID) & (target_flat != EOS_ID)  # Exclude SOS and EOS tokens
+
+            # Apply mask to logits and target
+            logits_flat = logits_flat[mask]
+            target_flat = target_flat[mask]
+
             loss = loss_fn(logits_flat, target_flat)
             writer.add_scalar('Loss/train', loss.item(), global_step=global_step)
             writer.flush()
             # Token-Level Accuracy
             predicted_tokens = torch.argmax(logits, dim=-1)
+
             correct_tokens_batch= (predicted_tokens == target).sum().item()# Predetti token per ogni sequenza
             correct_tokens += correct_tokens_batch  # Confronto token per token
-            total_tokens_batch=target.numel()
-            total_tokens += total_tokens_batch  # Conta il numero totale di token nel batch
-            accuracy_batch = correct_tokens_batch / total_tokens_batch if total_tokens_batch > 0 else 0.0
+
+            total_tokens += mask.sum().item() # Conta il numero totale di token nel batch
+            accuracy_batch = correct_tokens_batch / mask.sum().item() if mask.sum().item() > 0 else 0.0
             writer.add_scalar('Accuracy/train', accuracy_batch, global_step=global_step)
             writer.flush()
             print(
@@ -137,7 +147,9 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 scheduler.step()
         else:
             best_validationOutput = validation_output
+            print("first epoch completed")
 
+        print("FineTuning started: ", startFineTuning)
 
 
         epochNumber+=1
