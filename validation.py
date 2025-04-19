@@ -133,7 +133,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
                     if  word in ["<pad>", "<sos>", "<eos>"]:
                         continue
                     sentence.append(word)
-                print("Prediction: ", " ".join(sentence))
+                #print("Prediction: ", " ".join(sentence))
                 pred_sentences.append(" ".join(sentence))
 
             ref_sentences= []
@@ -144,7 +144,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
                     if  word in ["<pad>", "<sos>", "<eos>"]:
                         continue
                     sentence.append(word)
-                print("Reference: ", " ".join(sentence))
+                #print("Reference: ", " ".join(sentence))
                 ref_sentences.append(" ".join(sentence))
 
             all_predictions.extend(pred_sentences)
