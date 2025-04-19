@@ -1,0 +1,3 @@
+*.txt filter=lfs diff=lfs merge=lfs -text
+your-large-file.txt filter=lfs diff=lfs merge=lfs -text
+WikiArticlesCorrect.txt filter=lfs diff=lfs merge=lfs -text
