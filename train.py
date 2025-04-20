@@ -138,7 +138,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             accuracy_batch = correct_tokens_batch / target_adjusted.numel() if target_adjusted.numel() > 0 else 0.0
 
             if accuracy_batch > 0.5:
-                for pred, targ in zip(predicted_tokens, target):
+                print(accuracy_batch)
+                for pred, targ in zip(predicted_tokens, target_adjusted):
                     print("prediction: ", pred)
                     print("target: ", targ)
                     print("------------------------")
