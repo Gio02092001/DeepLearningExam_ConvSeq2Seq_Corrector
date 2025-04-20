@@ -13,7 +13,7 @@ class BuildDictionary_Map:
     """ Manca la generazione di 0.1x10x500.000 e 0.1x10x3.500.000"""
     corruption_prob = 0.1
     times = 5
-    sentenceNumber = 10000
+    sentenceNumber = 100
 
     def __init__(self):
         self.sourceSOS = self.sourceEOS = self.sourcePAD = self.sourceUNK = 0
@@ -24,20 +24,25 @@ class BuildDictionary_Map:
         Load precomputed dictionaries.
         """
 
-        def load_pickle(filename, special_tokens):
+        def load_pickle(filename, special_tokens,index_to_Target):
             try:
                 with open(filename, 'rb') as f:
                     dictionary = pickle.load(f)
                     for token in special_tokens:
-                        dictionary[token] = len(dictionary) + 1
+                        if index_to_Target:
+                            dictionary[len(dictionary) + 1]=token
+                        else:
+                            dictionary[token] = len(dictionary) + 1
                     return dictionary
             except FileNotFoundError:
                 print(f"The file '{filename}' was not found.")
                 return {}
 
-        word_dict = load_pickle(f'data/dictionaries/{sentence}_word_to_index.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"])
+        word_dict = load_pickle(f'data/dictionaries/{sentence}_word_to_index.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"], False)
         target_word_dict = load_pickle(f'data/dictionaries/{sentence}target_word_to_index.pkl',
-                                       ["<sos>", "<eos>", "<pad>"])
+                                       ["<sos>", "<eos>", "<pad>"], False)
+        index_to_target_word_dict=load_pickle(f'data/dictionaries/{sentence}index_to_target_word.pkl',
+                                              ["<sos>", "<eos>", "<pad>"],True)
         self.sourceSOS = word_dict["<sos>"]
         self.sourceEOS = word_dict["<eos>"]
         self.sourcePAD = word_dict["<pad>"]
@@ -54,7 +59,7 @@ class BuildDictionary_Map:
             print(f"The file '{sentence}x{rep}x{p}SentenceMap.pkl' was not found.")
             sentenceMap = {}
 
-        return word_dict, target_word_dict, sentenceMap
+        return word_dict, target_word_dict, sentenceMap, index_to_target_word_dict
 
     def corrupt_word_multiple(self, word, corruption_prob=None):
         """
@@ -183,12 +188,16 @@ class BuildDictionary_Map:
 
         word_to_index = {word: idx for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
         target_word_to_index = {word: idx for idx, word in enumerate(pd.Series(all_target_words).drop_duplicates())}
+        index_to_target_word = {idx: word for idx, word in enumerate(pd.Series(all_target_words).drop_duplicates())}
 
         with open(f'data/dictionaries/{self.sentenceNumber}_word_to_index.pkl', 'wb') as f:
             pickle.dump(word_to_index, f)
 
         with open(f'data/dictionaries/{self.sentenceNumber}target_word_to_index.pkl', 'wb') as f:
             pickle.dump(target_word_to_index, f)
+
+        with open(f'data/dictionaries/{self.sentenceNumber}index_to_target_word.pkl', 'wb') as f:
+            pickle.dump(index_to_target_word, f)
 
         with open(f'data/dictionaries/{self.sentenceNumber}x{self.times}x{self.corruption_prob}_SentenceMap.pkl',
                   'wb') as f:
@@ -204,8 +213,22 @@ class BuildDictionary_Map:
         val_size = int(validationSet * len(sentenceMap))
         val_keys = random.sample(list(sentenceMap.keys()), val_size)
 
-        validation_data = {k: sentenceMap[k] for k in val_keys}
-        train_data = {k: sentenceMap[k] for k in sentenceMap if k not in val_keys}
+        total = len(sentenceMap)
+        train_data = {}
+        validation_data = {}
+
+        for i, (k, v) in enumerate(sentenceMap.items()):
+            if k in val_keys:
+                validation_data[k] = v
+            else:
+                train_data[k] = v
+
+            # Print progress every 0.1%
+            if i % max(1, total // 1000) == 0:
+                percent = (i / total) * 100
+                print(f"Progress: {percent:.3f}%")
+
+        print("Completed splitting data!")
 
         print(f"Train size: {len(train_data)}, Validation size: {len(validation_data)}")
         return train_data, validation_data

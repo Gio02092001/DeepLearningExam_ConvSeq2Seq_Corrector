@@ -12,9 +12,10 @@ class TranslationDataset(Dataset):
         self.word_dict = word_dict
         self.target_word_dict=target_word_dict
         self.builder = builder
-
+        total = len(data_dict)
+        print("Dictionary build up Started")
         # Preprocess all data
-        for source, target in data_dict.items():
+        for idx, (source, target) in enumerate(data_dict.items()):
             # Tokenize
             source_tokens = self.tokenize_fn.tokenize(source)
             target_tokens = self.tokenize_fn.tokenize(target)
@@ -23,7 +24,10 @@ class TranslationDataset(Dataset):
             source_indices = [word_dict.get(token) for token in source_tokens] + [builder.sourceEOS]
             target_indices = [builder.targetSOS] + [target_word_dict.get(token) for token in target_tokens]
             self.data.append((source_indices, target_indices))
-
+            # Print progress every 0.1%
+            if idx % max(1, total // 1000) == 0:
+                percent = (idx / total) * 100
+                print(f"Progress: {percent:.3f}%")
     def __len__(self):
         return len(self.data)
 
@@ -48,7 +52,7 @@ def create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size=
     """
     # Group indices by source sequence length
     indices_by_length = {}
-
+    total = len(dataset)
     for idx in range(len(dataset)):
 
         source_len = len(dataset.data[idx][0])
@@ -59,15 +63,25 @@ def create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size=
         if source_len not in indices_by_length:
             indices_by_length[source_len] = []
         indices_by_length[source_len].append(idx)
+        # Print progress every 0.1%
+        if idx % max(1, total // 1000) == 0:
+            percent = (idx / total) * 100
+            print(f"Progress Creation of equal Batches: {percent:.3f}%")
 
     # Create batches of equal length sequences
     batches = []
+    total_groups = len(indices_by_length)
+    current_group = 0
+
     for length, indices in indices_by_length.items():
+        current_group += 1
         # Split into batches of batch_size
         for i in range(0, len(indices), batch_size):
             batch_indices = indices[i:i + batch_size]
             if batch_indices:  # Ensure batch is not empty
                 batches.append(batch_indices)
+        percent_group = (current_group / total_groups) * 100
+        print(f"Completed {percent_group:.2f}% of sequence length groups.")
 
     # Shuffle the batches
     random.shuffle(batches)

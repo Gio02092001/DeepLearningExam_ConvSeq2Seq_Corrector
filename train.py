@@ -10,13 +10,14 @@ from sacremoses import MosesTokenizer
 from torch.utils.data import DataLoader
 from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from DataLoader import TranslationDataset, collate_equal_length_fn, create_equal_length_batches
 from validation import validation
 
 
 def train(model, optimizer, scheduler, train_data, builder, word_dict, renormalizationLimit, maximumlearningRateLimit,
-          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size=64):
+          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict):
     print("Training started.")
     model.train()
     loss_fn = torch.nn.CrossEntropyLoss(reduction="mean")  # Standard loss, no need to ignore padding
@@ -62,15 +63,36 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         num_workers=workers,
         pin_memory=is_cuda  # Only pin memory if using GPU
     )
+
+    # Create dataset
+    validation_dataset = TranslationDataset(validation_data, word_dict, target_word_dict, builder, tokenizer)
+    print("Validation Dataset created")
+    # Create batches of equal length sequences
+    batch_sampler_validation = create_equal_length_batches(validation_dataset, fixedNumberOfInputElements, batch_size)
+    # Check number of CPUs
+    print("Batch sampler created")
+
+    # DataLoader
+    validationLoader = DataLoader(
+        validation_dataset,
+        batch_sampler=batch_sampler_validation,
+        collate_fn=collate_equal_length_fn,
+        num_workers=workers,
+        pin_memory=is_cuda  # Only pin memory if using GPU
+    )
+
     epochNumber=1
     best_validationOutput=0
     startFineTuning = False
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:
-        #validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, writer, batch_size)
+        #validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, writer, batch_size, validationLoader, index_to_target_word_dict)
+        print("FineTuning started: ", startFineTuning)
         print(f"Current learning rate: {optimizer.param_groups[0]['lr']}")
+
         epoch_loss = 0.0
         correct_tokens = 0  # Inizializza il contatore dei token corretti
         total_tokens = 0
+        progress_bar = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {epochNumber}")
 
         # Iterate through batches
         for batch_idx, batch in enumerate(train_loader):
@@ -113,8 +135,15 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             accuracy_batch = correct_tokens_batch / mask.sum().item() if mask.sum().item() > 0 else 0.0
             writer.add_scalar('Accuracy/train', accuracy_batch, global_step=global_step)
             writer.flush()
-            print(
-                f"Batch {batch_idx}, Loss: {loss.item()}, Batch size: {source.size(0)}, Accuracy: {accuracy_batch}, Sequence length: {source.size(1)}")
+            progress_bar.set_postfix({
+                'Loss': f"{loss.item():.4f}",
+                'Accuracy': f"{accuracy_batch * 100:.2f}%",
+                'Batch size': f"{source.size(0)}",
+                'Sequence length': f"{source.size(1)}"
+            })
+            progress_bar.update(1)
+            #print(
+                #f"Batch {batch_idx}, Loss: {loss.item()}, Batch size: {source.size(0)}, Accuracy: {accuracy_batch}, Sequence length: {source.size(1)}")
             # Backward pass
             loss.backward()
             grad_norm=torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=renormalizationLimit)
@@ -134,7 +163,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         print(
             f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(train_loader)}, Accuracy: {accuracy * 100:.2f}%")
 
-        validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, writer, batch_size)
+        validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, writer, batch_size, validationLoader, index_to_target_word_dict)
 
         if epochNumber>1:
             if startFineTuning==False:
@@ -149,7 +178,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             best_validationOutput = validation_output
             print("first epoch completed")
 
-        print("FineTuning started: ", startFineTuning)
+
 
 
         epochNumber+=1

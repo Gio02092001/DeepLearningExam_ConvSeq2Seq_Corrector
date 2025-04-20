@@ -21,7 +21,7 @@ def load_dataset(builder, config):
     """
     Load precomputed dictionaries and split the dataset.
     """
-    word_dict, target_word_dict, sentence_map = builder.loadDictionaries(
+    word_dict, target_word_dict, sentence_map, index_to_target_word_dict = builder.loadDictionaries(
         config["dataSet_Sentence"], config["dataSet_repetition"], config["dataSet_probability"]
     )
 
@@ -33,7 +33,7 @@ def load_dataset(builder, config):
 
     train_data, validation_data = builder.splitSet(sentence_map, config["validationSet"])
 
-    return word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data
+    return word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data, index_to_target_word_dict
 
 
 def main():
@@ -45,7 +45,7 @@ def main():
     builder = BuildDictionary_Map()
 
 
-    word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data = load_dataset(
+    word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data, index_to_target_word_dict = load_dataset(
         builder, config)
 
 
@@ -65,7 +65,7 @@ def main():
 
     # Execute model training
     train(model, optimizer, scheduler, train_data, builder, word_dict, config["renormalizationLimit"],
-          config["maximumlearningRateLimit"], target_word_dict, validation_data, config["fixedNumberOfInputElements"])
+          config["maximumlearningRateLimit"], target_word_dict, validation_data, config["fixedNumberOfInputElements"],config["batchSize"], index_to_target_word_dict)
 
 
 if __name__ == "__main__":

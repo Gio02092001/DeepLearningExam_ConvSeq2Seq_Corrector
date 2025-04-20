@@ -13,48 +13,12 @@ from DataLoader import TranslationDataset, create_equal_length_batches, collate_
 PER_BEAM_SEARCH = """POI QUANDO QUESTO FUNZIONA CAMBIA ARGMAX PER BEAM SEARCH"""
 
 
-def validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder,fixedNumberOfInputElements,epochNumber,writer, batch_size=64):
+def validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder,fixedNumberOfInputElements,epochNumber,writer, batch_size, validationLoader, index_to_target_word):
     print("Validation started.")
     model.eval()
     #loss_fn = torch.nn.CrossEntropyLoss()  # Standard loss, no need to ignore padding
     global_step = 0
-    index_to_target_word = {index: word for word, index in target_word_dict.items()}
-    # Create dataset
-    dataset = TranslationDataset(validation_data, word_dict, target_word_dict, builder, tokenizer)
-    print("Dataset created")
-    # Create batches of equal length sequences
-    batch_sampler = create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size)
-    # Check number of CPUs
-    print("Batch sampler created")
-    cpu_count = multiprocessing.cpu_count()
 
-    # Check if CUDA is available
-    is_cuda = torch.cuda.is_available()
-    timestamp = str(int(time.time()))
-    print("Num of CPU: ", cpu_count)
-    print("GPU available: ", is_cuda)
-    print("Timestamp: ", timestamp)
-
-    # Convert it to a string
-
-    # Decide number of workers
-    # Decide number of workers
-    if is_cuda:
-        # On GPU: use more workers, but not more than available CPUs
-        workers = min(8, cpu_count)
-
-    else:
-        # On CPU: use fewer workers
-        workers = min(4, cpu_count // 2)
-
-    # DataLoader
-    validationLoader = DataLoader(
-        dataset,
-        batch_sampler=batch_sampler,
-        collate_fn=collate_equal_length_fn,
-        num_workers=workers,
-        pin_memory=is_cuda  # Only pin memory if using GPU
-    )
     counter = 1
 
     epoch_loss = 0.0
