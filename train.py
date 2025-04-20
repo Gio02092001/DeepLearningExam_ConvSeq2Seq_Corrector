@@ -112,38 +112,32 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             # Forward pass with batch
             predictions, logits = model(source, target)
 
-            # Calculate loss
-            # Reshape logits to match CrossEntropyLoss expectations
-            # Assuming logits has shape [batch_size, seq_len, vocab_size]
+            target_without_sos = target[:, 1:]  # Rimuove il primo token (SOS)
+            eos_tensor = torch.full((target_without_sos.size(0), 1), builder.targetEOS, dtype=target_without_sos.dtype,
+                                    device=target_without_sos.device)
+            target_adjusted = torch.cat([target_without_sos, eos_tensor], dim=1)  # Aggiungi EOS
+
+            # Loss: reshape logits per CrossEntropyLoss
             batch_size, seq_len, target_vocab_size = logits.size()
             logits_flat = logits.reshape(batch_size * seq_len, target_vocab_size)
-            target_flat = target.reshape(batch_size * seq_len)
+            target_flat = target_adjusted.reshape(batch_size * seq_len)
 
-            # Mask for excluding SOS and EOS tokens
-            SOS_ID = builder.targetSOS
-            EOS_ID = builder.targetEOS
-            mask = (target_flat != SOS_ID) & (target_flat != EOS_ID)  # Exclude SOS and EOS tokens
-
-            # Apply mask to logits and target
-            logits_flat = logits_flat[mask]
-            target_flat = target_flat[mask]
-
+            # Calcola la loss
             loss = loss_fn(logits_flat, target_flat)
             writer.add_scalar('Loss/train', loss.item(), global_step=global_step)
             writer.flush()
-            # Token-Level Accuracy
+
+            # Accuracy token-level
             predicted_tokens = torch.argmax(logits, dim=-1)
 
-            eos_tensor = torch.full((predicted_tokens.size(0), 1), builder.targetEOS, dtype=predicted_tokens.dtype,
-                                    device=predicted_tokens.device)
-            predicted_tokens_with_eos = torch.cat([predicted_tokens, eos_tensor], dim=1)
-            target_without_sos = target[:, 1:]
+            # Conta token corretti
+            correct_tokens_batch = (predicted_tokens == target_adjusted).sum().item()
+            correct_tokens += correct_tokens_batch  # aggiorna conteggio
 
-            correct_tokens_batch = (predicted_tokens_with_eos == target_without_sos).sum().item()  # Correct comparisoncorrect_tokens += correct_tokens_batch  # Confronto token per token
+            total_tokens += target_adjusted.numel()  # Conta tutti i token nel target modificato
+            accuracy_batch = correct_tokens_batch / target_adjusted.numel() if target_adjusted.numel() > 0 else 0.0
 
-            total_tokens += mask.sum().item() # Conta il numero totale di token nel batch
-            accuracy_batch = correct_tokens_batch / mask.sum().item() if mask.sum().item() > 0 else 0.0
-            if accuracy_batch > 0.7:
+            if accuracy_batch > 0.5:
                 for pred, targ in zip(predicted_tokens, target):
                     print("prediction: ", pred)
                     print("target: ", targ)
