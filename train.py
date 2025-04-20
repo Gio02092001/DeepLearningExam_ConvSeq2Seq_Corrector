@@ -134,9 +134,12 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 print("prediction: ", pred)
                 print("target: ", targ)
 
+            eos_tensor = torch.full((predicted_tokens.size(0), 1), builder.eos, dtype=predicted_tokens.dtype,
+                                    device=predicted_tokens.device)
+            predicted_tokens_with_eos = torch.cat([predicted_tokens, eos_tensor], dim=1)
+            target_without_sos = target[:, 1:]
 
-            correct_tokens_batch= (predicted_tokens == target).sum().item()# Predetti token per ogni sequenza
-            correct_tokens += correct_tokens_batch  # Confronto token per token
+            correct_tokens_batch = (predicted_tokens_with_eos == target_without_sos).sum().item()  # Correct comparisoncorrect_tokens += correct_tokens_batch  # Confronto token per token
 
             total_tokens += mask.sum().item() # Conta il numero totale di token nel batch
             accuracy_batch = correct_tokens_batch / mask.sum().item() if mask.sum().item() > 0 else 0.0
