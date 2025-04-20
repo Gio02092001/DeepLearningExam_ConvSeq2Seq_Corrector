@@ -130,6 +130,10 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             writer.flush()
             # Token-Level Accuracy
             predicted_tokens = torch.argmax(logits, dim=-1)
+            for pred, targ in zip(predicted_tokens,target):
+                print("prediction: ", pred)
+                print("target: ", targ)
+
 
             correct_tokens_batch= (predicted_tokens == target).sum().item()# Predetti token per ogni sequenza
             correct_tokens += correct_tokens_batch  # Confronto token per token

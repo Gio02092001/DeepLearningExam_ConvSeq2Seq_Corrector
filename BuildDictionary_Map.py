@@ -18,9 +18,12 @@ class BuildDictionary_Map:
     times = 5
     sentenceNumber = 100
 
-    def __init__(self):
+    def __init__(self, sentence, rep, p):
         self.sourceSOS = self.sourceEOS = self.sourcePAD = self.sourceUNK = 0
         self.targetSOS = self.targetEOS = self.targetPAD = 0
+        self.corruption_prob=p
+        self.sentenceNumber = sentence
+        self.times=rep
 
     def loadDictionaries(self, sentence, rep, p):
         """

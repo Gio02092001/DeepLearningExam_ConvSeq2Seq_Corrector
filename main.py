@@ -1,3 +1,5 @@
+import os
+
 import torch
 import yaml
 from sacremoses import MosesTokenizer
@@ -46,7 +48,13 @@ def main():
 
 
     config = load_parameters()
-    builder = BuildDictionary_Map()
+    # Scommenta questi per creare gli ultimi dizionari grossi
+    builder = BuildDictionary_Map(config["dataSet_Sentence"], config["dataSet_repetition"],
+                                  config["dataSet_probability"])
+
+    if not os.path.exists(f'data/dictionaries/{config["dataSet_Sentence"]}x{config["dataSet_repetition"]}x{config["dataSet_probability"]}_SentenceMap.pkl'):
+        builder.buildDictionary()
+
 
 
     word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data, index_to_target_word_dict = load_dataset(
@@ -73,8 +81,4 @@ def main():
 
 
 if __name__ == "__main__":
-    #Scommenta questi per creare gli ultimi dizionari grossi
-    builder=BuildDictionary_Map()
-    builder.buildDictionary()
-
     main()
