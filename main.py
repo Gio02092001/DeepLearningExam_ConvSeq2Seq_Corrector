@@ -2,6 +2,7 @@ import torch
 import yaml
 from sacremoses import MosesTokenizer
 from torch.optim.lr_scheduler import StepLR, LambdaLR
+from tqdm import tqdm
 
 from Model_New.ModelBuilder_new import ConvModel_New
 from BuildDictionary_Map import BuildDictionary_Map
@@ -28,8 +29,8 @@ def load_dataset(builder, config):
     vocab_size = len(word_dict)
     target_vocab_size = len(target_word_dict)
 
-    print(f"Vocabulary size: {vocab_size}")
-    print(f"Target vocabulary size: {target_vocab_size}")
+    tqdm.write(f"Vocabulary size: {vocab_size}")
+    tqdm.write(f"Target vocabulary size: {target_vocab_size}")
 
     train_data, validation_data = builder.splitSet(sentence_map, config["validationSet"])
 
@@ -40,7 +41,10 @@ def main():
     """
     Main function to build and execute all model functions.
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    tqdm.write("--------------START SETUP----------------------")
+    device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
+
+
     config = load_parameters()
     builder = BuildDictionary_Map()
 
@@ -70,7 +74,7 @@ def main():
 
 if __name__ == "__main__":
     #Scommenta questi per creare gli ultimi dizionari grossi
-    #builder=BuildDictionary_Map()
-    #builder.buildDictionary()
+    builder=BuildDictionary_Map()
+    builder.buildDictionary()
 
     main()

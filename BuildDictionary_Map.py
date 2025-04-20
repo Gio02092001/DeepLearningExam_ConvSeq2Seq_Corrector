@@ -6,6 +6,9 @@ import chardet
 import nltk
 import pandas as pd
 from nltk import word_tokenize, RegexpTokenizer, punkt
+from tqdm import tqdm
+
+
 #nltk.download('punkt')
 
 class BuildDictionary_Map:
@@ -35,7 +38,7 @@ class BuildDictionary_Map:
                             dictionary[token] = len(dictionary) + 1
                     return dictionary
             except FileNotFoundError:
-                print(f"The file '{filename}' was not found.")
+                tqdm.write(f"The file '{filename}' was not found.")
                 return {}
 
         word_dict = load_pickle(f'data/dictionaries/{sentence}_word_to_index.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"], False)
@@ -54,9 +57,9 @@ class BuildDictionary_Map:
         try:
             with open(f'data/dictionaries/{sentence}x{rep}x{p}_SentenceMap.pkl', 'rb') as f:
                 sentenceMap = pickle.load(f)
-            print("Sentence map has been loaded.")
+            tqdm.write("Sentence map has been loaded.")
         except FileNotFoundError:
-            print(f"The file '{sentence}x{rep}x{p}SentenceMap.pkl' was not found.")
+            tqdm.write(f"The file '{sentence}x{rep}x{p}SentenceMap.pkl' was not found.")
             sentenceMap = {}
 
         return word_dict, target_word_dict, sentenceMap, index_to_target_word_dict
@@ -162,20 +165,20 @@ class BuildDictionary_Map:
         """
         Reads a dataset, tokenizes sentences, and builds word dictionaries.
         """
-        print("Reading file...")
+        tqdm.write("Reading file...")
         with open("data/WikiArticlesCorrect", "r", encoding="utf-16") as f:
             article = f.read()
         #encoding_info = chardet.detect(article)
-        #print(encoding_info)
-        print("Tokenizing sentences...")
+        #tqdm.write(encoding_info)
+        tqdm.write("Tokenizing sentences...")
         sentences = self.tokenizer.tokenize(article)
 
         all_words = []
         all_target_words=[]
         all_sentences = {}
 
-        for counter, sentence in enumerate(sentences[:self.sentenceNumber]):
-            print(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
+        for sentence in tqdm(sentences[:self.sentenceNumber], desc="Processing sentences"):
+            #tqdm.write(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
             words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
             finalSentence = ' '.join(words)
             all_words.extend(words)
@@ -203,7 +206,7 @@ class BuildDictionary_Map:
                   'wb') as f:
             pickle.dump(all_sentences, f)
 
-        print("Word-to-index dictionary has been saved successfully.")
+        tqdm.write("Word-to-index dictionary has been saved successfully.")
 
     def splitSet(self, sentenceMap, validationSet):
         """
@@ -217,18 +220,18 @@ class BuildDictionary_Map:
         train_data = {}
         validation_data = {}
 
-        for i, (k, v) in enumerate(sentenceMap.items()):
+        for k, v in tqdm(sentenceMap.items(), desc="Splitting train/validation"):
             if k in val_keys:
                 validation_data[k] = v
             else:
                 train_data[k] = v
 
-            # Print progress every 0.1%
-            if i % max(1, total // 1000) == 0:
+            # tqdm.write progress every 0.1%
+            """if i % max(1, total // 1000) == 0:
                 percent = (i / total) * 100
-                print(f"Progress: {percent:.3f}%")
+                tqdm.write(f"Progress: {percent:.3f}%")
+"""
+        tqdm.write("Completed splitting data!")
 
-        print("Completed splitting data!")
-
-        print(f"Train size: {len(train_data)}, Validation size: {len(validation_data)}")
+        tqdm.write(f"Train size: {len(train_data)}, Validation size: {len(validation_data)}")
         return train_data, validation_data

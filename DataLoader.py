@@ -2,6 +2,8 @@ import random
 
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
+
 
 class TranslationDataset(Dataset):
     """Custom dataset for translation pairs"""
@@ -13,9 +15,10 @@ class TranslationDataset(Dataset):
         self.target_word_dict=target_word_dict
         self.builder = builder
         total = len(data_dict)
-        print("Dictionary build up Started")
+        tqdm.write("Dictionary build up Started")
         # Preprocess all data
-        for idx, (source, target) in enumerate(data_dict.items()):
+        for idx, (source, target) in enumerate(tqdm(data_dict.items(), desc="Tokenizing data")):
+
             # Tokenize
             source_tokens = self.tokenize_fn.tokenize(source)
             target_tokens = self.tokenize_fn.tokenize(target)
@@ -24,10 +27,8 @@ class TranslationDataset(Dataset):
             source_indices = [word_dict.get(token) for token in source_tokens] + [builder.sourceEOS]
             target_indices = [builder.targetSOS] + [target_word_dict.get(token) for token in target_tokens]
             self.data.append((source_indices, target_indices))
-            # Print progress every 0.1%
-            if idx % max(1, total // 1000) == 0:
-                percent = (idx / total) * 100
-                print(f"Progress: {percent:.3f}%")
+            # tqdm.write progress every 0.1%
+
     def __len__(self):
         return len(self.data)
 
@@ -53,7 +54,7 @@ def create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size=
     # Group indices by source sequence length
     indices_by_length = {}
     total = len(dataset)
-    for idx in range(len(dataset)):
+    for idx in tqdm(range(len(dataset)), desc="Creating length-based groups"):
 
         source_len = len(dataset.data[idx][0])
         if source_len > fixedNumberOfInputElements:
@@ -63,17 +64,15 @@ def create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size=
         if source_len not in indices_by_length:
             indices_by_length[source_len] = []
         indices_by_length[source_len].append(idx)
-        # Print progress every 0.1%
-        if idx % max(1, total // 1000) == 0:
-            percent = (idx / total) * 100
-            print(f"Progress Creation of equal Batches: {percent:.3f}%")
+        # tqdm.write progress every 0.1%
+
 
     # Create batches of equal length sequences
     batches = []
     total_groups = len(indices_by_length)
     current_group = 0
 
-    for length, indices in indices_by_length.items():
+    for length, indices in tqdm(indices_by_length.items(), desc="Creating batches"):
         current_group += 1
         # Split into batches of batch_size
         for i in range(0, len(indices), batch_size):
@@ -81,7 +80,7 @@ def create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size=
             if batch_indices:  # Ensure batch is not empty
                 batches.append(batch_indices)
         percent_group = (current_group / total_groups) * 100
-        print(f"Completed {percent_group:.2f}% of sequence length groups.")
+        #tqdm.write(f"Completed {percent_group:.2f}% of sequence length groups.")
 
     # Shuffle the batches
     random.shuffle(batches)

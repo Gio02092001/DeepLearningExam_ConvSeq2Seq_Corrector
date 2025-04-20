@@ -8,13 +8,14 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import sacrebleu
 from rouge_score import rouge_scorer
+from tqdm import tqdm
+
 from DataLoader import TranslationDataset, create_equal_length_batches, collate_equal_length_fn
 
-PER_BEAM_SEARCH = """POI QUANDO QUESTO FUNZIONA CAMBIA ARGMAX PER BEAM SEARCH"""
 
 
 def validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder,fixedNumberOfInputElements,epochNumber,writer, batch_size, validationLoader, index_to_target_word):
-    print("Validation started.")
+    #tqdm.write("Validation started.")
     model.eval()
     #loss_fn = torch.nn.CrossEntropyLoss()  # Standard loss, no need to ignore padding
     global_step = 0
@@ -31,6 +32,10 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
     num_sequences = 0
     with torch.no_grad():
         # Iterate through batches
+        tqdm.write("--------------------Validation Epoch start-----------------------")
+        time.sleep(0.1)
+        progress_bar = tqdm(validationLoader, desc=f"Epoch {epochNumber} Validation")
+
         for batch_idx, batch in enumerate(validationLoader):
             total_nll_batch = 0
             total_tokens_batch = 0
@@ -49,7 +54,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
             log_probs_collected = []
             all_predictions = []
             all_references = []
-            predicted_ids, total_nll, total_tokens = beamSearch(model, source, beam_width=5, builder=builder)
+            predicted_ids, total_nll, total_tokens = beamSearch(model, source,progress_bar, beam_width=5, builder=builder)
             predictedSequence = torch.tensor(predicted_ids, dtype=torch.long, device=model.device)
             """for step in range(source.shape[1]):  # You should define this limit!
                 predictions, logits = model(source, targetInput)
@@ -71,7 +76,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
 
             # After the loop, stack the sequence
             #predictedSequence = torch.cat(predictedSequence, dim=-1)  # Shape: (batch_size, max_output_length)
-            #print(predictedSequence)
+            #tqdm.write(predictedSequence)
             # Stack all log probabilities
             if total_tokens > 0:
                 average_nll = total_nll / total_tokens
@@ -97,7 +102,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
                     if  word in ["<pad>", "<sos>", "<eos>"]:
                         continue
                     sentence.append(word)
-                print("Prediction: ", sentence)
+                #tqdm.write("Prediction: ", sentence)
 
                 pred_sentences.append(" ".join(sentence))
 
@@ -109,7 +114,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
                     if  word in ["<pad>", "<sos>", "<eos>"]:
                         continue
                     sentence.append(word)
-                print("Reference: ", sentence)
+                #tqdm.write("Reference: ", sentence)
                 ref_sentences.append(" ".join(sentence))
 
             all_predictions.extend(pred_sentences)
@@ -132,7 +137,7 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
             writer.add_scalar('accuracy/validation_batch', token_accuracy, global_step=global_step)
             writer.flush()
 
-            #print(
+            #tqdm.write(
             #    f"VALIDATION Batch {batch_idx}, Loss: {average_nll}, Perplexity: {perplexity}, Accuracy: {token_accuracy*100} , Batch size: {source.size(0)}, Sequence length: {source.size(1)}")
             # Backward pass
 
@@ -147,11 +152,12 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
             torch.cuda.empty_cache()
             gc.collect()
         # Dopo aver completato il ciclo sui batch:
+    progress_bar.close()
     bleu = sacrebleu.corpus_bleu(all_predictions, [all_references])
-    print(f"BLEU Score: {bleu.score}")
+    tqdm.write(f"BLEU Score: {bleu.score}")
 
     chrf = sacrebleu.corpus_chrf(all_predictions, [all_references])
-    print(f"CHRF Score: {chrf.score}")
+    tqdm.write(f"CHRF Score: {chrf.score}")
 
     # ROUGE
     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
@@ -163,9 +169,9 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
         rouge2.append(scores['rouge2'].fmeasure)
         rougeL.append(scores['rougeL'].fmeasure)
 
-    print(f"ROUGE-1: {sum(rouge1) / len(rouge1):.4f}")
-    print(f"ROUGE-2: {sum(rouge2) / len(rouge2):.4f}")
-    print(f"ROUGE-L: {sum(rougeL) / len(rougeL):.4f}")
+    tqdm.write(f"ROUGE-1: {sum(rouge1) / len(rouge1):.4f}")
+    tqdm.write(f"ROUGE-2: {sum(rouge2) / len(rouge2):.4f}")
+    tqdm.write(f"ROUGE-L: {sum(rougeL) / len(rougeL):.4f}")
 
     # Log metrics to TensorBoard
     writer.add_scalar('BLEU/validation_epoch', bleu.score, global_step=counter)
@@ -176,11 +182,11 @@ def validation(validation_data, model, tokenizer, word_dict, target_word_dict, b
     writer.flush()
     epoch_perplexity=epoch_perplexity/ len(validationLoader)
 
-    print(f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(validationLoader)}")
-    print(f"Epoch perplexity: {epoch_perplexity}")
+    tqdm.write(f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(validationLoader)}")
+    tqdm.write(f"Epoch perplexity: {epoch_perplexity}")
     return epoch_perplexity
 
-def beamSearch(model, source, beam_width, builder, max_output_length=100):
+def beamSearch(model, source,progress_bar, beam_width, builder, max_output_length=100):
     """
     Esegue Beam Search su un batch di sequenze sorgenti.
 
@@ -257,6 +263,11 @@ def beamSearch(model, source, beam_width, builder, max_output_length=100):
 
     # Dopo la generazione, calcola la perdita media
     average_nll = total_nll / total_tokens if total_tokens > 0 else 0.0
-    print(f"Total NLL: {total_nll}, Total Tokens: {total_tokens}, Average NLL per Token: {average_nll}")
+    progress_bar.set_postfix({
+        'Total NLL': f'{total_nll:.4f}',
+        'Total Tokens': total_tokens,
+        'Avg NLL/Token': f'{average_nll:.4f}'
+    })
+    progress_bar.update(1)
 
     return final_sequences, total_nll, total_tokens
