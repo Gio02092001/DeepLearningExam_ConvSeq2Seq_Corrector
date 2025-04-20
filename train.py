@@ -35,7 +35,10 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     cpu_count = multiprocessing.cpu_count()
 
     # Check if CUDA is available
-    is_cuda = torch.cuda.is_available()
+    if torch.backends.mps.is_available() or torch.cuda.is_available():
+        is_cuda = True
+    else:
+        is_cuda = False
     timestamp = str(int(time.time()))
     tqdm.write("Num of CPU:" f"{cpu_count }")
     tqdm.write("GPU available: "f"{ is_cuda}")
@@ -45,14 +48,14 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
     # Decide number of workers
     # Decide number of workers
-    if is_cuda:
+    if model.device == torch.device("cuda"):
         # On GPU: use more workers, but not more than available CPUs
         workers = min(8, cpu_count)
         log_dir = "/content/drive/MyDrive/runs/"+ timestamp
         writer = SummaryWriter(log_dir=log_dir)
     else:
         # On CPU: use fewer workers
-        workers = min(4, cpu_count // 2)
+        workers = min(8, cpu_count)
         writer = SummaryWriter()
 
     # DataLoader
@@ -61,7 +64,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         batch_sampler=batch_sampler,
         collate_fn=collate_equal_length_fn,
         num_workers=workers,
-        pin_memory=is_cuda  # Only pin memory if using GPU
+        pin_memory=torch.cuda.is_available()  # Only pin memory if using GPU
     )
 
     # Create dataset
@@ -130,9 +133,6 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             writer.flush()
             # Token-Level Accuracy
             predicted_tokens = torch.argmax(logits, dim=-1)
-            for pred, targ in zip(predicted_tokens,target):
-                print("prediction: ", pred)
-                print("target: ", targ)
 
 
             correct_tokens_batch= (predicted_tokens == target).sum().item()# Predetti token per ogni sequenza
@@ -140,6 +140,11 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
             total_tokens += mask.sum().item() # Conta il numero totale di token nel batch
             accuracy_batch = correct_tokens_batch / mask.sum().item() if mask.sum().item() > 0 else 0.0
+            if accuracy_batch > 0.7:
+                for pred, targ in zip(predicted_tokens, target):
+                    print("prediction: ", pred)
+                    print("target: ", targ)
+                    print("------------------------")
             writer.add_scalar('Accuracy/train', accuracy_batch, global_step=global_step)
             writer.flush()
             progress_bar.set_postfix({
