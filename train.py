@@ -134,7 +134,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             # Token-Level Accuracy
             predicted_tokens = torch.argmax(logits, dim=-1)
 
-            eos_tensor = torch.full((predicted_tokens.size(0), 1), builder.eos, dtype=predicted_tokens.dtype,
+            eos_tensor = torch.full((predicted_tokens.size(0), 1), builder.targetEOS, dtype=predicted_tokens.dtype,
                                     device=predicted_tokens.device)
             predicted_tokens_with_eos = torch.cat([predicted_tokens, eos_tensor], dim=1)
             target_without_sos = target[:, 1:]
