@@ -175,7 +175,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         progress_bar.close()
         tqdm.write(
             f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(train_loader)}, Accuracy: {accuracy * 100:.2f}%")
-
+        """
         validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, writer, batch_size, validationLoader, index_to_target_word_dict)
 
         if epochNumber>1:
@@ -190,7 +190,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         else:
             best_validationOutput = validation_output
             #tqdm.write("first epoch completed")
-
+        """
         epochNumber+=1
 
 
