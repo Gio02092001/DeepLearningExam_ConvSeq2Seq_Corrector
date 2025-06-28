@@ -18,6 +18,7 @@ from validation import validation
 
 def train(model, optimizer, scheduler, train_data, builder, word_dict, renormalizationLimit, maximumlearningRateLimit,
           target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience):
+    model.train()
     patience = patience
     no_improve = 0
     best_metric = -float('inf')

@@ -82,7 +82,7 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
     avg_rougeL = sum(rougeL)/len(rougeL) if rougeL else 0.0
     token_accuracy = total_correct_tokens/total_tokens if total_tokens>0 else 0.0
 
-    model.train()
+    #model.train()
     return {
         'bleu': bleu,
         'chrf': chrf,
