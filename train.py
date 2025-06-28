@@ -141,7 +141,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
             if accuracy_batch > 0.5:
                 print(accuracy_batch)
-                for pred, targ in zip(predicted_tokens, target_adjusted):
+                #for pred, targ in zip(predicted_tokens, target_adjusted):
                     #print("prediction: ", pred)
                     #print("target: ", targ)
                     #print("------------------------")
