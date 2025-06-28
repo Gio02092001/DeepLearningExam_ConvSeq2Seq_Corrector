@@ -144,7 +144,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 for pred, targ in zip(predicted_tokens, target_adjusted):
                     #print("prediction: ", pred)
                     #print("target: ", targ)
-                    print("------------------------")
+                    #print("------------------------")
             writer.add_scalar('Accuracy/train', accuracy_batch, global_step=global_step)
             writer.flush()
             progress_bar.set_postfix({
