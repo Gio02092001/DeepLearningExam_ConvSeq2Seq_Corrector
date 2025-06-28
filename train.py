@@ -215,6 +215,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             print(f"PATIENTE superata → scheduler.step() invocato")
             no_improve = 0  # resetta contatore per misurare le prossime PATIENCE
 
+        epochNumber+=1
+
 
 def tokenizeSentence(input_sentence):
     mt = MosesTokenizer('en')
