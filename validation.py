@@ -35,7 +35,7 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
             tgt = batch['target'].to(device)                 # [batch_size, tgt_len]
 
             # Stampa dell'input (raw token ids)
-            print("Input ids:", src.tolist())
+            #print("Input ids:", src.tolist())
 
             # Generazione con beam search
             predictions, _, _ = beamSearch(model, src, None, beam_width, builder=builder)
@@ -48,7 +48,7 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
                 words = [index_to_target_word[i] for i in pred_ids
                          if index_to_target_word[i] not in ['<pad>','<sos>','<eos>']]
                 sentence = " ".join(words)
-                print("Prediction:", sentence)
+                #print("Prediction:", sentence)
                 pred_sentences.append(sentence)
 
                 # Decodifica riferimento
