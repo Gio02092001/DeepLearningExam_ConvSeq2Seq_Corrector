@@ -17,8 +17,10 @@ from validation import validation
 
 
 def train(model, optimizer, scheduler, train_data, builder, word_dict, renormalizationLimit, maximumlearningRateLimit,
-          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict):
-
+          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience):
+    patience = patience
+    no_improve = 0
+    best_metric = -float('inf')
     model.train()
     loss_fn = torch.nn.CrossEntropyLoss(reduction="mean")  # Standard loss, no need to ignore padding
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
@@ -175,23 +177,43 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         progress_bar.close()
         tqdm.write(
             f"Epoch {epochNumber} finished, average loss: {epoch_loss / len(train_loader)}, Accuracy: {accuracy * 100:.2f}%")
-        """
-        validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, writer, batch_size, validationLoader, index_to_target_word_dict)
 
-        if epochNumber>1:
-            if startFineTuning==False:
-                if validation_output<best_validationOutput:
-                    best_validationOutput=validation_output
-                else:
-                    scheduler.step()
-                    startFineTuning=True
-            else:
-                scheduler.step()
+
+
+        # ... dentro al loop di epoca, subito dopo aver chiuso progress_bar ...
+        valid_metrics = validation(
+            model,
+            validationLoader,
+            index_to_target_word_dict,
+            beam_width=5,
+            device=model.device,
+            builder=builder
+        )
+        current_metric= valid_metrics['token_accuracy']
+        tqdm.write(
+            f"Validation — BLEU: {valid_metrics['bleu']:.2f}, "
+            f"CHR-F: {valid_metrics['chrf']:.2f}, "
+            f"Acc: {valid_metrics['token_accuracy']:.2%}"
+        )
+
+        # gestione della patience
+        if epochNumber == 1:
+            best_metric = current_metric
+            no_improve = 0
         else:
-            best_validationOutput = validation_output
-            #tqdm.write("first epoch completed")
-        """
-        epochNumber+=1
+            if current_metric > best_metric:
+                best_metric = current_metric
+                no_improve = 0
+            else:
+                no_improve += 1
+                print(f"Nessun miglioramento per {no_improve}/{patience} epoche")
+
+        # solo quando no_improve >= PATIENCE, chiamo scheduler.step()
+        if no_improve >= patience:
+            # scheduler.step() ridurrà lr di 10× (fino al tuo min_lr 1e-4)
+            scheduler.step(current_metric)
+            print(f"PATIENTE superata → scheduler.step() invocato")
+            no_improve = 0  # resetta contatore per misurare le prossime PATIENCE
 
 
 def tokenizeSentence(input_sentence):

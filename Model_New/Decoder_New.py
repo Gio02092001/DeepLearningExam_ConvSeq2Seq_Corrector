@@ -21,6 +21,8 @@ class Decoder_Attention_New(nn.Module):
         targetEmbedding_g = input[1]
         encoderOutput_z = input[2]
         c_inputEncoder = input[3]
+        inputDecoder = self.drop(inputDecoder)
+
         residual=inputDecoder
         seq_Length = inputDecoder.size(1)
 

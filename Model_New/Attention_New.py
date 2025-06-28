@@ -20,7 +20,7 @@ class Attention_New(nn.Module):
         decoderOutput = self.linearInput(decoderOutput)
         residual=decoderOutput
 
-        decoderstate = (decoderOutput + targetEmbedding_g)*math.sqrt(0.5)  # Decoder state with residual connection
+        decoderstate = decoderOutput + targetEmbedding_g   # )*math. #sqrt(0.5)  # Decoder state with residual connection
 
         scalarProducts = torch.bmm(decoderstate, encoderOutput_z.transpose(1,2))  # [batch, decoder_len, encoder_len]
         sz = scalarProducts.size()
@@ -29,9 +29,9 @@ class Attention_New(nn.Module):
 
         conditionalInput =torch.bmm(attentionScores, c_inputEncoder)
         s = c_inputEncoder.size(1)
-        conditionalInput = conditionalInput * (s * math.sqrt(1.0 / s))
+        conditionalInput = conditionalInput * s  #* math.sqrt(1.0 / s))
 
 
-        output = (residual+conditionalInput)*math.sqrt(0.5)
+        output = residual+conditionalInput #)*math.sqrt(0.5)
 
         return self.linearOutput(output)
