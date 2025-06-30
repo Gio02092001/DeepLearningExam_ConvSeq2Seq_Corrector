@@ -194,6 +194,9 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         tqdm.write(
             f"Validation — BLEU: {valid_metrics['bleu']:.2f}, "
             f"CHR-F: {valid_metrics['chrf']:.2f}, "
+            f"ROUGE-1: {valid_metrics['rouge1']:.4f}, "
+            f"ROUGE-2: {valid_metrics['rouge2']:.4f}, "
+            f"ROUGE-L: {valid_metrics['rougeL']:.4f}, "
             f"Acc: {valid_metrics['token_accuracy']:.2%}"
         )
 
@@ -205,6 +208,13 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             if current_metric > best_metric:
                 best_metric = current_metric
                 no_improve = 0
+                torch.save({
+                    'epoch': epochNumber,
+                    'model_state': model.state_dict(),
+                    'optimizer_state': optimizer.state_dict(),
+                    'best_metric': best_metric
+                }, f"best_model_epoch{epochNumber}.pt")
+                print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2%})")
             else:
                 no_improve += 1
                 print(f"Nessun miglioramento per {no_improve}/{patience} epoche")
@@ -213,7 +223,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         if no_improve >= patience:
             # scheduler.step() ridurrà lr di 10× (fino al tuo min_lr 1e-4)
             scheduler.step(current_metric)
-            print(f"PATIENTE superata → scheduler.step() invocato")
+            print(f"PATIENCE superata → scheduler.step() invocato")
             no_improve = 0  # resetta contatore per misurare le prossime PATIENCE
 
         epochNumber+=1
