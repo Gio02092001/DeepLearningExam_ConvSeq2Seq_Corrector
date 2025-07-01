@@ -54,7 +54,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     if model.device == torch.device("cuda"):
         # On GPU: use more workers, but not more than available CPUs
         workers = min(8, cpu_count)
-        log_dir = "/content/drive/MyDrive/runs/"+ timestamp
+        log_dir = "runs" #"/content/drive/MyDrive/runs/"+ timestamp
         writer = SummaryWriter(log_dir=log_dir)
     else:
         # On CPU: use fewer workers
