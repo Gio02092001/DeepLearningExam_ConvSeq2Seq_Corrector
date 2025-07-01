@@ -16,7 +16,7 @@ class BuildDictionary_Map:
     """ Manca la generazione di 0.1x10x500.000 e 0.1x10x3.500.000"""
     corruption_prob = 0.1
     times = 5
-    sentenceNumber = 100
+    sentenceNumber = 100000
 
     def __init__(self, sentence, rep, p):
         self.sourceSOS = self.sourceEOS = self.sourcePAD = self.sourceUNK = 0
