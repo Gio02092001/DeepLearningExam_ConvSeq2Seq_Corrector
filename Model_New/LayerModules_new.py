@@ -3,12 +3,15 @@ import torch
 from torch import nn
 from torch.nn import init
 import torch.nn.functional as F
-
+from torch.nn.utils import weight_norm
 
 class LinearTransformation_New(nn.Module):
     def __init__(self, noDropoutBefore, input_dim, output_dim, p_dropout):
         super().__init__()
-        self.linear = nn.Linear(input_dim, output_dim)
+        self.linear = weight_norm(
+            nn.Linear(input_dim, output_dim),
+            name='weight', dim=0
+        )
         if noDropoutBefore:
             init.normal_(self.linear.weight, mean=0.0, std=math.sqrt(1 / input_dim))  # He initialization
         else:
@@ -22,11 +25,14 @@ class LinearTransformation_New(nn.Module):
 class ConvolutionalBlock_New(nn.Module):
     def __init__(self, hidden_dim, kernel_width, p_dropout):
         super().__init__()
-        self.conv = nn.Conv1d(in_channels=hidden_dim,
+        self.conv = weight_norm(
+            nn.Conv1d(in_channels=hidden_dim,
                               out_channels=hidden_dim * 2,
                               kernel_size=kernel_width,
                               padding=0,  # Adding padding to maintain the sequence length
-                              stride=1)
+                              stride=1),
+            name='weight', dim=0
+        )
         torch.nn.init.normal_(self.conv.weight, mean=0.0,
                               std=math.sqrt(4 * (1-p_dropout) / (hidden_dim * kernel_width)))
         nn.init.constant_(self.conv.bias, 0)

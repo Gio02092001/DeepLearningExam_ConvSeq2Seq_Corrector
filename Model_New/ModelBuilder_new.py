@@ -35,6 +35,7 @@ class ConvModel_New(nn.Module):
         )
         self.classification = Classification_New(hidden_dim, embedding_dim, target_vocab_size, p_dropout)
         self.attentionLayer=decoderLayer
+
     def forward(self, source_input, target_input):
         inputEmbedding_w = self.embeddingEncoder(source_input)
         inputEncoder = self.linearEncoderInput(inputEmbedding_w)
