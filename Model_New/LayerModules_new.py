@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn import init
 import torch.nn.functional as F
-from torch.nn.utils import weight_norm
+from torch.nn.utils.parametrizations import weight_norm
 
 class LinearTransformation_New(nn.Module):
     def __init__(self, noDropoutBefore, input_dim, output_dim, p_dropout):
