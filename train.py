@@ -132,7 +132,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     print(f"  Source tensor: {src_mb:.2f} MB")
                     print(f"  Target tensor: {tgt_mb:.2f} MB")
 
-                    if device.type == 'cuda':
+                    if model.device.type == 'cuda':
                         alloc_after = torch.cuda.memory_allocated(model.device)
                         reserved_after = torch.cuda.memory_reserved(model.device)
                         free_after = reserved_after - alloc_after
