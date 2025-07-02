@@ -141,6 +141,8 @@ class BuildDictionary_Map:
             corruption_prob = corruption_prob or self.corruption_prob
             corrupted_word = []
             for char in word:
+                if char =="-":
+                    print(word)
                 if random.random() < corruption_prob:
                     if (len(word)>1):
                         corruption_type = random.choice(['add', 'delete', 'change'])
