@@ -27,6 +27,10 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
     all_references = []
     total_correct_tokens = 0
     total_tokens = 0
+    total_loss = 0.0
+    total_ppl_tokens = 0
+
+    loss_val = torch.nn.CrossEntropyLoss(reduction="sum")
 
     with torch.no_grad():
         for batch in tqdm(validation_loader, desc="Validation Inference"):
@@ -34,6 +38,17 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
             src = batch['source'].to(device)                 # [batch_size, src_len]
             tgt = batch['target'].to(device)                 # [batch_size, tgt_len]
 
+            # + passata teacher-forcing per somma della cross‐entropy
+            _, logits_tf = model(src, tgt)
+            # + loss sommata su tutti i token non-pad
+            loss_tf = loss_val(
+                logits_tf.view(-1, logits_tf.size(-1)),
+                tgt.view(-1)
+            ).item()
+            # + conto token non-pad
+            # nonpad = (tgt != pad_token_id).sum().item()
+            total_loss += loss_tf
+            total_ppl_tokens += tgt.numel()
             # Stampa dell'input (raw token ids)
             #print("Input ids:", src.tolist())
 
@@ -63,6 +78,7 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
                 total_correct_tokens += correct
                 total_tokens += min_len
 
+
             all_hypotheses.extend(pred_sentences)
             all_references.extend(ref_sentences)
 
@@ -82,6 +98,8 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
     avg_rougeL = sum(rougeL)/len(rougeL) if rougeL else 0.0
     token_accuracy = total_correct_tokens/total_tokens if total_tokens>0 else 0.0
 
+    ppl = math.exp(total_loss / total_ppl_tokens)
+
     #model.train()
     return {
         'bleu': bleu,
@@ -89,7 +107,8 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
         'rouge1': avg_rouge1,
         'rouge2': avg_rouge2,
         'rougeL': avg_rougeL,
-        'token_accuracy': token_accuracy
+        'token_accuracy': token_accuracy,
+        'perplexity': ppl
     }
 
 

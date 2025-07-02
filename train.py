@@ -230,7 +230,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             f"ROUGE-1: {valid_metrics['rouge1']:.4f}, "
             f"ROUGE-2: {valid_metrics['rouge2']:.4f}, "
             f"ROUGE-L: {valid_metrics['rougeL']:.4f}, "
-            f"Acc: {valid_metrics['token_accuracy']:.2%}"
+            f"Acc: {valid_metrics['token_accuracy']:.2%},"
+            f"Perplexity: {valid_metrics['perplexity']:.2f}"
         )
 
         # gestione della patience
