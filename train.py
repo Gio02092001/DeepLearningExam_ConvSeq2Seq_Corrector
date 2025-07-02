@@ -109,8 +109,38 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             gc.collect()
             torch.cuda.empty_cache()
 
-            source = batch['source'].to(model.device)
-            target = batch['target'].to(model.device)
+            if model.device.type == 'cuda':
+                alloc_before = torch.cuda.memory_allocated(model.device)
+                reserved_before = torch.cuda.memory_reserved(model.device)
+                free_before = reserved_before - alloc_before
+
+            try:
+                # attempt to move to device
+                source = batch['source'].to(model.device)
+                target = batch['target'].to(model.device)
+
+            except RuntimeError as e:
+                # only catch CUDA OOM
+                if 'out of memory' in str(e):
+                    # compute how big the tensors are (in MB)
+                    src_bytes = batch['source'].numel() * batch['source'].element_size()
+                    tgt_bytes = batch['target'].numel() * batch['target'].element_size()
+                    src_mb = src_bytes / (1024 ** 2)
+                    tgt_mb = tgt_bytes / (1024 ** 2)
+
+                    print(f"\n*** CUDA OOM moving batch to {model.device} ***")
+                    print(f"  Source tensor: {src_mb:.2f} MB")
+                    print(f"  Target tensor: {tgt_mb:.2f} MB")
+
+                    if device.type == 'cuda':
+                        alloc_after = torch.cuda.memory_allocated(model.device)
+                        reserved_after = torch.cuda.memory_reserved(model.device)
+                        free_after = reserved_after - alloc_after
+
+                        print(f"  GPU before to(): alloc={alloc_before / 1024 ** 2:.2f} MB, "
+                              f"reserved={reserved_before / 1024 ** 2:.2f} MB, free={free_before / 1024 ** 2:.2f} MB")
+                        print(f"  GPU after  to(): alloc={alloc_after / 1024 ** 2:.2f} MB, "
+                              f"reserved={reserved_after / 1024 ** 2:.2f} MB, free={free_after / 1024 ** 2:.2f} MB")
 
             # Forward pass with batch
             predictions, logits = model(source, target)
