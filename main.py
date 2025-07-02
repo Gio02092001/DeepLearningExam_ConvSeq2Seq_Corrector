@@ -24,19 +24,19 @@ def load_dataset(builder, config):
     """
     Load precomputed dictionaries and split the dataset.
     """
-    word_dict, target_word_dict, sentence_map, index_to_target_word_dict = builder.loadDictionaries(
+    word_dict, target_word_dict, sentence_map, index_to_target_word_dict, index_to_word_dict = builder.loadDictionaries(
         config["dataSet_Sentence"], config["dataSet_repetition"], config["dataSet_probability"]
     )
 
-    vocab_size = len(word_dict)
-    target_vocab_size = len(target_word_dict)
+    vocab_size = len(word_dict)+1
+    target_vocab_size = len(target_word_dict)+1
 
     tqdm.write(f"Vocabulary size: {vocab_size}")
     tqdm.write(f"Target vocabulary size: {target_vocab_size}")
 
     train_data, validation_data = builder.splitSet(sentence_map, config["validationSet"])
 
-    return word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data, index_to_target_word_dict
+    return word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data, index_to_target_word_dict, index_to_word_dict
 
 
 def main():
@@ -57,7 +57,7 @@ def main():
 
 
 
-    word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data, index_to_target_word_dict = load_dataset(
+    word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data, index_to_target_word_dict, index_to_word_dict = load_dataset(
         builder, config)
 
 
@@ -77,7 +77,7 @@ def main():
 
     # Execute model training
     train(model, optimizer, scheduler, train_data, builder, word_dict, config["renormalizationLimit"],
-          config["maximumlearningRateLimit"], target_word_dict, validation_data, config["fixedNumberOfInputElements"],config["batchSize"], index_to_target_word_dict, config['patience'])
+          config["maximumlearningRateLimit"], target_word_dict, validation_data, config["fixedNumberOfInputElements"],config["batchSize"], index_to_target_word_dict, config['patience'], index_to_word_dict)
 
 
 if __name__ == "__main__":

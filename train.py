@@ -16,8 +16,9 @@ from DataLoader import TranslationDataset, collate_equal_length_fn, create_equal
 from validation import validation
 
 
+
 def train(model, optimizer, scheduler, train_data, builder, word_dict, renormalizationLimit, maximumlearningRateLimit,
-          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience):
+          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience, index_to_word_dict):
     model.train()
     patience = patience
     no_improve = 0
@@ -111,6 +112,38 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
             source = batch['source'].to(model.device)
             target = batch['target'].to(model.device)
+
+            # 1) Estrai source_ids e portali su CPU
+
+
+            corrupted_ids = []
+            for sent_ids in source:
+                # 2) idx → parola
+                words = [
+                    index_to_word_dict.get(int(w), "<UNK>")
+                    for w in sent_ids
+                ]
+                # 3) applica corrupt_sentence: ottieni una lista di frasi (times versioni)
+                corrupted_sentences = builder.corrupt_sentence(
+                    words,
+                    corruption_prob=0.02,
+                    times=1
+                )
+                # 4) prendi la prima (o randomly una delle volte, se vuoi variarlo)
+                corrupted_words = corrupted_sentences[0].split()
+
+                # 5) parola → idx, con fallback su unk
+                corrupted_idx =[]
+                for w in corrupted_words:
+                    if w == "<UNK>":
+                        corrupted_idx.append(builder.sourceUNK)
+                    else:
+                        corrupted_idx.append(word_dict.get(w, builder.sourceUNK))
+
+                corrupted_ids.append(corrupted_idx)
+
+            # 7) ricostruisci il tensore e rimandalo su GPU
+            source= torch.tensor(corrupted_ids, device=model.device)
 
             # Forward pass with batch
             predictions, logits = model(source, target)
@@ -220,9 +253,10 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 print(f"Nessun miglioramento per {no_improve}/{patience} epoche")
 
         # solo quando no_improve >= PATIENCE, chiamo scheduler.step()
-        if no_improve >= patience:
+        if no_improve > patience:
             # scheduler.step() ridurrà lr di 10× (fino al tuo min_lr 1e-4)
-            scheduler.step(current_metric)
+            scheduler.step()
+            startFineTuning=True
             print(f"PATIENCE superata → scheduler.step() invocato")
             no_improve = 0  # resetta contatore per misurare le prossime PATIENCE
 

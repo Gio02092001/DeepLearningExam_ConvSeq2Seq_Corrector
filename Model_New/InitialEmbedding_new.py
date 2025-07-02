@@ -33,15 +33,15 @@ class Embedding(nn.Module):
         batch_size, seq_len = input.size()
 
         # Create a mask for unknown tokens
-        unknown_mask = (input >= self.vocab_size) | (input < 0)  # Identify invalid indices
 
-        # Create a safe version of the input where invalid indices are replaced with unknown_token
-        safe_input = input.clone()
-        safe_input[unknown_mask] = self.unknown_token
 
         # Get word embeddings for all positions and all batches at once
         # Shape: (batch_size, seq_len, embedding_dim)
-        word_embeddings = self.embedding_vocabulary(safe_input)
+        for sentence in input:
+            for token in sentence:
+                if token > self.vocab_size:
+                    print(token)
+        word_embeddings = self.embedding_vocabulary(input)
 
         # Generate positional embeddings for all positions at once
         positions = torch.arange(0, seq_len, device=input.device).unsqueeze(0).expand(batch_size, -1)

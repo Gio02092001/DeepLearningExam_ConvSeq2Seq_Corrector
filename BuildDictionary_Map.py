@@ -44,11 +44,14 @@ class BuildDictionary_Map:
                 tqdm.write(f"The file '{filename}' was not found.")
                 return {}
 
+        index_to_word_dict = load_pickle(f'data/dictionaries/{sentence}_index_to_word.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"],
+                                True)
         word_dict = load_pickle(f'data/dictionaries/{sentence}_word_to_index.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"], False)
-        target_word_dict = load_pickle(f'data/dictionaries/{sentence}target_word_to_index.pkl',
+        target_word_dict = load_pickle(f'data/dictionaries/{sentence}_target_word_to_index.pkl',
                                        ["<sos>", "<eos>", "<pad>"], False)
-        index_to_target_word_dict=load_pickle(f'data/dictionaries/{sentence}index_to_target_word.pkl',
+        index_to_target_word_dict=load_pickle(f'data/dictionaries/{sentence}_index_to_target_word.pkl',
                                               ["<sos>", "<eos>", "<pad>"],True)
+
         self.sourceSOS = word_dict["<sos>"]
         self.sourceEOS = word_dict["<eos>"]
         self.sourcePAD = word_dict["<pad>"]
@@ -65,96 +68,100 @@ class BuildDictionary_Map:
             tqdm.write(f"The file '{sentence}x{rep}x{p}SentenceMap.pkl' was not found.")
             sentenceMap = {}
 
-        return word_dict, target_word_dict, sentenceMap, index_to_target_word_dict
+        return word_dict, target_word_dict, sentenceMap, index_to_target_word_dict, index_to_word_dict
 
     def corrupt_word_multiple(self, word, corruption_prob=None):
         """
         Randomly corrupts each character in a word with a given probability.
         """
-        keyboard_neighbors = {
-            'q': ['w', 'a'],
-            'w': ['q', 'e', 'a', 's'],
-            'e': ['w', 'r', 's', 'd'],
-            'r': ['e', 't', 'd', 'f'],
-            't': ['r', 'y', 'f', 'g'],
-            'y': ['t', 'u', 'g', 'h'],
-            'u': ['y', 'i', 'h', 'j'],
-            'i': ['u', 'o', 'j', 'k'],
-            'o': ['i', 'p', 'k', 'l'],
-            'p': ['o', 'l'],
-
-            'a': ['q', 'w', 's', 'z'],
-            's': ['a', 'w', 'd', 'z', 'x'],
-            'd': ['s', 'e', 'f', 'x', 'c'],
-            'f': ['d', 'r', 'g', 'c', 'v'],
-            'g': ['f', 't', 'h', 'v', 'b'],
-            'h': ['g', 'y', 'j', 'b', 'n'],
-            'j': ['h', 'u', 'k', 'n', 'm'],
-            'k': ['j', 'i', 'l', 'm'],
-            'l': ['k', 'o'],
-
-            'z': ['a', 's', 'x'],
-            'x': ['z', 's', 'd', 'c'],
-            'c': ['x', 'd', 'f', 'v'],
-            'v': ['c', 'f', 'g', 'b'],
-            'b': ['v', 'g', 'h', 'n'],
-            'n': ['b', 'h', 'j', 'm'],
-            'm': ['n', 'j', 'k'],
-
-            'Q': ['W', 'A'],
-            'W': ['Q', 'E', 'A', 'S'],
-            'E': ['W', 'R', 'S', 'D'],
-            'R': ['E', 'T', 'D', 'F'],
-            'T': ['R', 'Y', 'F', 'G'],
-            'Y': ['T', 'U', 'G', 'H'],
-            'U': ['Y', 'I', 'H', 'J'],
-            'I': ['U', 'O', 'J', 'K'],
-            'O': ['I', 'P', 'K', 'L'],
-            'P': ['O', 'L'],
-
-            'A': ['Q', 'W', 'S', 'Z'],
-            'S': ['A', 'W', 'D', 'Z', 'X'],
-            'D': ['S', 'E', 'F', 'X', 'C'],
-            'F': ['D', 'R', 'G', 'C', 'V'],
-            'G': ['F', 'T', 'H', 'V', 'B'],
-            'H': ['G', 'Y', 'J', 'B', 'N'],
-            'J': ['H', 'U', 'K', 'N', 'M'],
-            'K': ['J', 'I', 'L', 'M'],
-            'L': ['K', 'O'],
-
-            'Z': ['A', 'S', 'X'],
-            'X': ['Z', 'S', 'D', 'C'],
-            'C': ['X', 'D', 'F', 'V'],
-            'V': ['C', 'F', 'G', 'B'],
-            'B': ['V', 'G', 'H', 'N'],
-            'N': ['B', 'H', 'J', 'M'],
-            'M': ['N', 'J', 'K']
-        }
-
-        corruption_prob = corruption_prob or self.corruption_prob
-        corrupted_word = []
-        for char in word:
-            if random.random() < corruption_prob:
-                if (len(word)>1):
-                    corruption_type = random.choice(['add', 'delete', 'change'])
-                else:
-                    corruption_type = random.choice(['add', 'change'])
-                if corruption_type == 'add':
-                    corrupted_word.append(char)
-                    corrupted_word.append(random.choice(keyboard_neighbors[char]))
-                elif corruption_type == 'delete':
-                    continue
-                elif corruption_type == 'change':
-                    corrupted_word.append(random.choice(keyboard_neighbors[char]))
-            corrupted_word.append(char)
-
-        if random.random() < corruption_prob:
-            corrupted_word.append(random.choice(string.ascii_letters))
-
-        if len(''.join(corrupted_word))<1:
-            return random.choice(string.ascii_letters)
+        SPECIAL_TOKENS = {"<UNK>", "<unk>", "<eos>", "<sos>", "<pad>"}
+        if word in SPECIAL_TOKENS:
+            return word
         else:
-            return ''.join(corrupted_word)
+            keyboard_neighbors = {
+                'q': ['w', 'a'],
+                'w': ['q', 'e', 'a', 's'],
+                'e': ['w', 'r', 's', 'd'],
+                'r': ['e', 't', 'd', 'f'],
+                't': ['r', 'y', 'f', 'g'],
+                'y': ['t', 'u', 'g', 'h'],
+                'u': ['y', 'i', 'h', 'j'],
+                'i': ['u', 'o', 'j', 'k'],
+                'o': ['i', 'p', 'k', 'l'],
+                'p': ['o', 'l'],
+
+                'a': ['q', 'w', 's', 'z'],
+                's': ['a', 'w', 'd', 'z', 'x'],
+                'd': ['s', 'e', 'f', 'x', 'c'],
+                'f': ['d', 'r', 'g', 'c', 'v'],
+                'g': ['f', 't', 'h', 'v', 'b'],
+                'h': ['g', 'y', 'j', 'b', 'n'],
+                'j': ['h', 'u', 'k', 'n', 'm'],
+                'k': ['j', 'i', 'l', 'm'],
+                'l': ['k', 'o'],
+
+                'z': ['a', 's', 'x'],
+                'x': ['z', 's', 'd', 'c'],
+                'c': ['x', 'd', 'f', 'v'],
+                'v': ['c', 'f', 'g', 'b'],
+                'b': ['v', 'g', 'h', 'n'],
+                'n': ['b', 'h', 'j', 'm'],
+                'm': ['n', 'j', 'k'],
+
+                'Q': ['W', 'A'],
+                'W': ['Q', 'E', 'A', 'S'],
+                'E': ['W', 'R', 'S', 'D'],
+                'R': ['E', 'T', 'D', 'F'],
+                'T': ['R', 'Y', 'F', 'G'],
+                'Y': ['T', 'U', 'G', 'H'],
+                'U': ['Y', 'I', 'H', 'J'],
+                'I': ['U', 'O', 'J', 'K'],
+                'O': ['I', 'P', 'K', 'L'],
+                'P': ['O', 'L'],
+
+                'A': ['Q', 'W', 'S', 'Z'],
+                'S': ['A', 'W', 'D', 'Z', 'X'],
+                'D': ['S', 'E', 'F', 'X', 'C'],
+                'F': ['D', 'R', 'G', 'C', 'V'],
+                'G': ['F', 'T', 'H', 'V', 'B'],
+                'H': ['G', 'Y', 'J', 'B', 'N'],
+                'J': ['H', 'U', 'K', 'N', 'M'],
+                'K': ['J', 'I', 'L', 'M'],
+                'L': ['K', 'O'],
+
+                'Z': ['A', 'S', 'X'],
+                'X': ['Z', 'S', 'D', 'C'],
+                'C': ['X', 'D', 'F', 'V'],
+                'V': ['C', 'F', 'G', 'B'],
+                'B': ['V', 'G', 'H', 'N'],
+                'N': ['B', 'H', 'J', 'M'],
+                'M': ['N', 'J', 'K']
+            }
+
+            corruption_prob = corruption_prob or self.corruption_prob
+            corrupted_word = []
+            for char in word:
+                if random.random() < corruption_prob:
+                    if (len(word)>1):
+                        corruption_type = random.choice(['add', 'delete', 'change'])
+                    else:
+                        corruption_type = random.choice(['add', 'change'])
+                    if corruption_type == 'add':
+                        corrupted_word.append(char)
+                        corrupted_word.append(random.choice(keyboard_neighbors[char]))
+                    elif corruption_type == 'delete':
+                        continue
+                    elif corruption_type == 'change':
+                        corrupted_word.append(random.choice(keyboard_neighbors[char]))
+                corrupted_word.append(char)
+
+            if random.random() < corruption_prob:
+                corrupted_word.append(random.choice(string.ascii_letters))
+
+            if len(''.join(corrupted_word))<1:
+                return random.choice(string.ascii_letters)
+            else:
+                return ''.join(corrupted_word)
 
     def corrupt_sentence(self, words, corruption_prob=None, times=None):
         """
@@ -192,6 +199,7 @@ class BuildDictionary_Map:
                 all_words.extend(corrupted_words)
                 all_sentences.setdefault(corrupted_sentence, finalSentence)
 
+        index_to_word = {idx: word for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
         word_to_index = {word: idx for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
         target_word_to_index = {word: idx for idx, word in enumerate(pd.Series(all_target_words).drop_duplicates())}
         index_to_target_word = {idx: word for idx, word in enumerate(pd.Series(all_target_words).drop_duplicates())}
@@ -199,11 +207,14 @@ class BuildDictionary_Map:
         with open(f'data/dictionaries/{self.sentenceNumber}_word_to_index.pkl', 'wb') as f:
             pickle.dump(word_to_index, f)
 
-        with open(f'data/dictionaries/{self.sentenceNumber}target_word_to_index.pkl', 'wb') as f:
+        with open(f'data/dictionaries/{self.sentenceNumber}_target_word_to_index.pkl', 'wb') as f:
             pickle.dump(target_word_to_index, f)
 
-        with open(f'data/dictionaries/{self.sentenceNumber}index_to_target_word.pkl', 'wb') as f:
+        with open(f'data/dictionaries/{self.sentenceNumber}_index_to_target_word.pkl', 'wb') as f:
             pickle.dump(index_to_target_word, f)
+
+        with open(f'data/dictionaries/{self.sentenceNumber}_index_to_word.pkl', 'wb') as f:
+            pickle.dump(index_to_word, f)
 
         with open(f'data/dictionaries/{self.sentenceNumber}x{self.times}x{self.corruption_prob}_SentenceMap.pkl',
                   'wb') as f:
