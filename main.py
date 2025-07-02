@@ -44,7 +44,7 @@ def main():
     Main function to build and execute all model functions.
     """
     tqdm.write("--------------START SETUP----------------------")
-    device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
+    device = torch.device("cuda:1" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
 
 
     config = load_parameters()
