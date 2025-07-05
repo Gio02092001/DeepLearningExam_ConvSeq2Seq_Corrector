@@ -178,7 +178,7 @@ class BuildDictionary_Map:
         Reads a dataset, tokenizes sentences, and builds word dictionaries.
         """
         tqdm.write("Reading file...")
-        with open("data/WikiArticlesCorrect", "r", encoding="utf-8") as f:
+        with open("data/WikiArticlesCorrect", "r", encoding="utf-16") as f:
             article = f.read()
         #encoding_info = chardet.detect(article)
         #tqdm.write(encoding_info)

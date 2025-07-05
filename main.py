@@ -68,11 +68,16 @@ def main():
         config["decoderLayer"], builder.sourceUNK, device
     )
 
+    ckpt = torch.load("1751611289_best_model_epoch73.pt", map_location="cuda:1" )
+    model.load_state_dict(ckpt["model_state"])
+
     model.to(device)
 
     optimizer = torch.optim.SGD(
         model.parameters(), lr=config["learning_rate"], momentum=config["nestorovsMomentum"], nesterov=True
     )
+    optimizer.load_state_dict(ckpt["optimizer_state"])
+
     scheduler = LambdaLR(optimizer, lr_lambda=lambda step: 0.1 ** step)
 
     # Execute model training
