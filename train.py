@@ -22,7 +22,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
           target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience, index_to_word_dict):
     model.train()
     timestamp = str(int(time.time()))
-    os.mkdir(timestamp)
+    os.mkdir(f"models/{timestamp}")
     patience = patience
     no_improve = 0
     best_metric = -float('inf')

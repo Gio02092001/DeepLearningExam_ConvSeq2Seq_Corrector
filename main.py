@@ -57,7 +57,7 @@ def pick_best_gpu():
         info = pynvml.nvmlDeviceGetMemoryInfo(handle)
 
         free_mb = info.free
-        print(f"GPU {i}: {free_mb:.1f} MB liberi")
+        print(f"GPU {i}: {free_mb:.1f} liberi")
         if free_mb > best_free:
             best_free = free_mb
             best_idx = i
