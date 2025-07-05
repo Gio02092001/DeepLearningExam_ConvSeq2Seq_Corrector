@@ -7,6 +7,7 @@ import random
 
 import torch
 from sacremoses import MosesTokenizer
+from tensorflow import timestamp
 from torch.utils.data import DataLoader
 from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
@@ -20,6 +21,8 @@ from validation import validation
 def train(model, optimizer, scheduler, train_data, builder, word_dict, renormalizationLimit, maximumlearningRateLimit,
           target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience, index_to_word_dict):
     model.train()
+    timestamp = str(int(time.time()))
+    os.mkdir(timestamp)
     patience = patience
     no_improve = 0
     best_metric = -float('inf')
@@ -43,7 +46,6 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         is_cuda = True
     else:
         is_cuda = False
-    timestamp = str(int(time.time()))
     tqdm.write("Num of CPU:" f"{cpu_count }")
     tqdm.write("GPU available: "f"{ is_cuda}")
     tqdm.write("Timestamp: "f"{ timestamp}")
@@ -247,7 +249,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'model_state': model.state_dict(),
                     'optimizer_state': optimizer.state_dict(),
                     'best_metric': best_metric
-                }, f"{timestamp}_best_model_epoch{epochNumber}.pt")
+                }, f"models/{timestamp}/{timestamp}_best_model_epoch{epochNumber}.pt")
                 print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
             else:
                 no_improve += 1
