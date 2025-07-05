@@ -9,6 +9,7 @@ from tqdm import tqdm
 from Model_New.ModelBuilder_new import ConvModel_New
 from BuildDictionary_Map import BuildDictionary_Map
 from train import train
+import pynvml
 
 
 def load_parameters(config_path="Config/config.yaml"):
@@ -42,31 +43,30 @@ def pick_best_gpu():
     if not torch.cuda.is_available():
         return None
 
-    try:
-        # proviamo a usare NVIDIA NVML per leggere memoria libera
-        import pynvml
-        pynvml.nvmlInit()
-        n_gpus = torch.cuda.device_count()
 
-        best_idx = None
-        best_free = 0
+    # proviamo a usare NVIDIA NVML per leggere memoria libera
 
-        for i in range(n_gpus):
-            handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-            info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-            free_mb = info.free / 1024**2  # converti in MB
-            print(f"GPU {i}: {free_mb:.1f} MB liberi")
-            if free_mb > best_free:
-                best_free = free_mb
-                best_idx = i
+    pynvml.nvmlInit()
+    n_gpus = torch.cuda.device_count()
 
-        pynvml.nvmlShutdown()
+    best_idx = None
+    best_free = 0
 
-        return best_idx
+    for i in range(n_gpus):
+        handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+        info = pynvml.nvmlDeviceGetMemoryInfo(handle)
 
-    except ImportError:
-        # se pynvml non c'è, ricadi sul primo device disponibile
-        return 0 if torch.cuda.device_count() > 0 else None
+        free_mb = info.free
+        print(f"GPU {i}: {free_mb:.1f} MB liberi")
+        if free_mb > best_free:
+            best_free = free_mb
+            best_idx = i
+
+    pynvml.nvmlShutdown()
+
+    return best_idx
+
+
 
 def main():
     """
