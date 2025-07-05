@@ -38,13 +38,54 @@ def load_dataset(builder, config):
 
     return word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data, index_to_target_word_dict, index_to_word_dict
 
+def pick_best_gpu():
+    if not torch.cuda.is_available():
+        return None
+
+    try:
+        # proviamo a usare NVIDIA NVML per leggere memoria libera
+        import pynvml
+        pynvml.nvmlInit()
+        n_gpus = torch.cuda.device_count()
+
+        best_idx = None
+        best_free = 0
+
+        for i in range(n_gpus):
+            handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+            info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+            free_mb = info.free / 1024**2  # converti in MB
+            print(f"GPU {i}: {free_mb:.1f} MB liberi")
+            if free_mb > best_free:
+                best_free = free_mb
+                best_idx = i
+
+        pynvml.nvmlShutdown()
+
+        return best_idx
+
+    except ImportError:
+        # se pynvml non c'è, ricadi sul primo device disponibile
+        return 0 if torch.cuda.device_count() > 0 else None
 
 def main():
     """
     Main function to build and execute all model functions.
     """
     tqdm.write("--------------START SETUP----------------------")
-    device = torch.device("cuda:1" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
+
+    # scelta del device
+    best_gpu = pick_best_gpu()
+    if best_gpu is not None:
+        device = torch.device(f"cuda:{best_gpu}")
+        print(f"Usando CUDA device gpu:{best_gpu}")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+        print("Usando MPS (Apple Silicon)")
+    else:
+        device = torch.device("cpu")
+        print("Usando CPU")
+    #device = torch.device("cuda:1" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
 
 
     config = load_parameters()
