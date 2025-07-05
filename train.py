@@ -249,7 +249,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'model_state': model.state_dict(),
                     'optimizer_state': optimizer.state_dict(),
                     'best_metric': best_metric
-                }, f"models/{timestamp}/{timestamp}_best_model_epoch{epochNumber}.pt")
+                }, f"models/{timestamp}/best_model.pt")
                 print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
             else:
                 no_improve += 1
