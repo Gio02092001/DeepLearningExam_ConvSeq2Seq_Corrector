@@ -223,7 +223,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             device=model.device,
             builder=builder
         )
-        current_metric= valid_metrics['token_accuracy']
+        current_metric= valid_metrics['chrf']
         tqdm.write(
             f"Validation — BLEU: {valid_metrics['bleu']:.2f}, "
             f"CHR-F: {valid_metrics['chrf']:.2f}, "
@@ -248,7 +248,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'optimizer_state': optimizer.state_dict(),
                     'best_metric': best_metric
                 }, f"{timestamp}_best_model_epoch{epochNumber}.pt")
-                print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2%})")
+                print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
             else:
                 no_improve += 1
                 print(f"Nessun miglioramento per {no_improve}/{patience} epoche")
