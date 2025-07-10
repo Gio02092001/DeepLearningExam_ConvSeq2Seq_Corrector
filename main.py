@@ -94,7 +94,7 @@ def main():
 
     if hasattr(args, 'pretrained') and args.file:
         # args.file esiste e non è None
-        pretrained = args.file
+        pretrained = args.pretrained
         ckpt = torch.load(f"/models/{pretrained}/best_model.pt", map_location=device)
         config = load_parameters("/models/pretrained/config.yaml")
         # fai qualcosa con file_path
