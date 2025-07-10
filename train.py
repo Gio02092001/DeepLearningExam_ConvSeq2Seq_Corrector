@@ -261,7 +261,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 }, f"models/{timestamp}/best_model.pt")
                 print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
                 src_path="Config/config.yaml"
-                dst_path=f"/models/{timestamp}/"
+                dst_path=f"/models/{timestamp}"
                 shutil.copy2(src_path, dst_path)
             else:
                 no_improve += 1
