@@ -75,6 +75,7 @@ def main():
     """
     tqdm.write("--------------START SETUP----------------------")
     pretrained=None
+    ckpt=None
     # scelta del device
     best_gpu = pick_best_gpu()
     if best_gpu is not None:
