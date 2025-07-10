@@ -92,7 +92,7 @@ def main():
     parser.add_argument('--pretrained', help="Percorso del file")
     args = parser.parse_args()
 
-    if hasattr(args, 'pretrained') and args.file:
+    if hasattr(args, 'pretrained') and args.pretrained is not None:
         # args.file esiste e non è None
         pretrained = args.pretrained
         ckpt = torch.load(f"/models/{pretrained}/best_model.pt", map_location=device)
