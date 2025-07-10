@@ -10,6 +10,7 @@ from Model_New.ModelBuilder_new import ConvModel_New
 from BuildDictionary_Map import BuildDictionary_Map
 from train import train
 import pynvml
+import argparse
 
 
 def load_parameters(config_path="Config/config.yaml"):
@@ -73,7 +74,7 @@ def main():
     Main function to build and execute all model functions.
     """
     tqdm.write("--------------START SETUP----------------------")
-
+    pretrained=None
     # scelta del device
     best_gpu = pick_best_gpu()
     if best_gpu is not None:
@@ -87,8 +88,20 @@ def main():
         print("Usando CPU")
     #device = torch.device("cuda:1" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--pretrained', help="Percorso del file")
+    args = parser.parse_args()
 
-    config = load_parameters()
+    if hasattr(args, 'pretrained') and args.file:
+        # args.file esiste e non è None
+        pretrained = args.file
+        ckpt = torch.load(f"/models/{pretrained}/best_model.pt", map_location=device)
+        config = load_parameters("/models/pretrained/config.yaml")
+        # fai qualcosa con file_path
+    else:
+        config = load_parameters()
+
+
     # Scommenta questi per creare gli ultimi dizionari grossi
     builder = BuildDictionary_Map(config["dataSet_Sentence"], config["dataSet_repetition"],
                                   config["dataSet_probability"])
@@ -109,21 +122,22 @@ def main():
         config["decoderLayer"], builder.sourceUNK, device
     )
 
-    #ckpt = torch.load("1751611289_best_model_epoch73.pt", map_location="cuda:1" )
-    #model.load_state_dict(ckpt["model_state"])
 
     model.to(device)
 
     optimizer = torch.optim.SGD(
         model.parameters(), lr=config["learning_rate"], momentum=config["nestorovsMomentum"], nesterov=True
     )
-    #optimizer.load_state_dict(ckpt["optimizer_state"])
 
     scheduler = LambdaLR(optimizer, lr_lambda=lambda step: 0.1 ** step)
 
+    if pretrained is not None:
+        model.load_state_dict(ckpt["model_state"])
+        optimizer.load_state_dict(ckpt["optimizer_state"])
+
     # Execute model training
     train(model, optimizer, scheduler, train_data, builder, word_dict, config["renormalizationLimit"],
-          config["maximumlearningRateLimit"], target_word_dict, validation_data, config["fixedNumberOfInputElements"],config["batchSize"], index_to_target_word_dict, config['patience'], index_to_word_dict)
+          config["maximumlearningRateLimit"], target_word_dict, validation_data, config["fixedNumberOfInputElements"],config["batchSize"], index_to_target_word_dict, config['patience'], index_to_word_dict, ckpt, pretrained)
 
 
 if __name__ == "__main__":

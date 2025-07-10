@@ -4,6 +4,8 @@ import os
 import time
 from datetime import datetime
 import random
+import shutil
+import os
 
 import torch
 from sacremoses import MosesTokenizer
@@ -19,10 +21,13 @@ from validation import validation
 
 
 def train(model, optimizer, scheduler, train_data, builder, word_dict, renormalizationLimit, maximumlearningRateLimit,
-          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience, index_to_word_dict):
+          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience, index_to_word_dict, ckpt=None, pretrained=None):
     model.train()
-    timestamp = str(int(time.time()))
-    os.mkdir(f"models/{timestamp}")
+    if ckpt is None:
+        timestamp = str(int(time.time()))
+        os.mkdir(f"models/{timestamp}")
+    else:
+        timestamp=pretrained
     patience = patience
     no_improve = 0
     best_metric = -float('inf')
@@ -89,10 +94,13 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         num_workers=workers,
         pin_memory=is_cuda  # Only pin memory if using GPU
     )
+    if ckpt is None:
+        epochNumber=1
+        startFineTuning = False
+    else:
+        epochNumber=ckpt['epoch']
+        startFineTuning =ckpt['startFineTuning']
 
-    epochNumber=1
-    best_validationOutput=0
-    startFineTuning = False
 
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:
         #validation_output= validation(validation_data, model, tokenizer, word_dict, target_word_dict, builder, fixedNumberOfInputElements, epochNumber, writer, batch_size, validationLoader, index_to_target_word_dict)
@@ -102,7 +110,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         epoch_loss = 0.0
         correct_tokens = 0  # Inizializza il contatore dei token corretti
         total_tokens = 0
-        time.sleep(0.1)
+        #time.sleep(0.1)
         tqdm.write("--------------------Training Epoch start-----------------------")
         progress_bar = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {epochNumber}")
 
@@ -248,9 +256,13 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'epoch': epochNumber,
                     'model_state': model.state_dict(),
                     'optimizer_state': optimizer.state_dict(),
-                    'best_metric': best_metric
+                    'best_metric ChrF': best_metric,
+                    'startFineTuning': startFineTuning
                 }, f"models/{timestamp}/best_model.pt")
                 print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
+                src_path="Config/config.yaml"
+                dst_path=f"/models/{timestamp}/config.yaml"
+                shutil.copy2(src_path, dst_path)
             else:
                 no_improve += 1
                 print(f"Nessun miglioramento per {no_improve}/{patience} epoche")
