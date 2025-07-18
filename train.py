@@ -101,9 +101,11 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     if ckpt is None:
         epochNumber=1
         startFineTuning = False
+
     else:
         epochNumber=ckpt['epoch']
         startFineTuning =ckpt['startFineTuning']
+        best_metric = ckpt['best_metric_ChrF']
 
 
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:
@@ -260,7 +262,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'epoch': epochNumber,
                     'model_state': model.state_dict(),
                     'optimizer_state': optimizer.state_dict(),
-                    'best_metric ChrF': best_metric,
+                    'best_metric_ChrF': best_metric,
                     'startFineTuning': startFineTuning
                 }, f"models/{timestamp}/best_model.pt")
                 print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
