@@ -26,12 +26,13 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     if ckpt is None:
         timestamp = str(int(time.time()))
         os.mkdir(f"models/{timestamp}")
+        #time.sleep(0)
+        src_path = "Config/config.yaml"
+        dst_path = f"models/{timestamp}"
+        shutil.copy2(src_path, dst_path)
     else:
         timestamp=pretrained
-
-        src_path = "Config/config.yaml"
-        dst_path = f"/models/{timestamp}"
-        shutil.copy2(src_path, dst_path)
+        
     patience = patience
     no_improve = 0
     best_metric = -float('inf')
@@ -266,9 +267,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'startFineTuning': startFineTuning
                 }, f"models/{timestamp}/best_model.pt")
                 print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
-                src_path="Config/config.yaml"
-                dst_path=f"/models/{timestamp}"
-                shutil.copy2(src_path, dst_path)
+                
             else:
                 no_improve += 1
                 print(f"Nessun miglioramento per {no_improve}/{patience} epoche")
