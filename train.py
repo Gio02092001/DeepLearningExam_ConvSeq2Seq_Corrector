@@ -29,9 +29,9 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     else:
         timestamp=pretrained
 
-    src_path = "Config/config.yaml"
-    dst_path = f"/models/{timestamp}"
-    shutil.copy2(src_path, dst_path)
+        src_path = "Config/config.yaml"
+        dst_path = f"/models/{timestamp}"
+        shutil.copy2(src_path, dst_path)
     patience = patience
     no_improve = 0
     best_metric = -float('inf')
