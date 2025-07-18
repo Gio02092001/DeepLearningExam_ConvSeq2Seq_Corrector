@@ -104,7 +104,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         startFineTuning = False
 
     else:
-        epochNumber=ckpt['epoch']
+        epochNumber=ckpt['epoch']+1
         startFineTuning =ckpt['startFineTuning']
         best_metric = ckpt['best_metric_ChrF']
 
