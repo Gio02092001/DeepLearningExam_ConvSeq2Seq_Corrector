@@ -17,6 +17,7 @@ class BuildDictionary_Map:
     corruption_prob = 0.1
     times = 5
     sentenceNumber = 100000
+    sentence_corruption_prob = 0.1
 
     def __init__(self, sentence, rep, p):
         self.sourceSOS = self.sourceEOS = self.sourcePAD = self.sourceUNK = 0
@@ -165,13 +166,17 @@ class BuildDictionary_Map:
             else:
                 return ''.join(corrupted_word)
 
-    def corrupt_sentence(self, words, corruption_prob=None, times=None):
+    def corrupt_sentence(self, words, corruption_prob=None, times=None, sentence_corruption_prob=None):
         """
         Corrupts a sentence by applying corruption logic to each word in the sentence.
         """
-        corruption_prob = corruption_prob or self.corruption_prob
-        times = times or self.times
-        return [' '.join(self.corrupt_word_multiple(word, corruption_prob) for word in words) for _ in range(times)]
+        sentence_corruption_prob = sentence_corruption_prob or self.sentence_corruption_prob
+        if random.random() > sentence_corruption_prob:
+            corruption_prob = corruption_prob or self.corruption_prob
+            times = times or self.times
+            return [' '.join(self.corrupt_word_multiple(word, corruption_prob) for word in words) for _ in range(times)]
+        else:
+            return words
 
     def buildDictionary(self):
         """
