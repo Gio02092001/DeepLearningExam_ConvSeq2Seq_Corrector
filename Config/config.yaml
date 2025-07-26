@@ -17,3 +17,4 @@ dataSet_probability: 0.08
 batchSize: 64
 patience: 1
 
+
