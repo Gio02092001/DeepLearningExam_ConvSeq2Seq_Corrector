@@ -166,29 +166,18 @@ class BuildDictionary_Map:
                 return ''.join(corrupted_word)
 
     def corrupt_sentence(self, words, corruption_prob=None, times=None, keep_prob=0.1):
-        """
-        Corrupts a sentence by applying corruption logic to each word in the sentence,
-        but leaves a percentage of sentences unchanged (keep_prob).
-
-        Args:
-            words: List of words (sentence)
-            corruption_prob: Probability of corrupting each character
-            times: How many variants to return
-            keep_prob: Fraction of sentences to keep uncorrupted (default 10%)
-        """
         corruption_prob = corruption_prob or self.corruption_prob
         times = times or self.times
 
         outputs = []
         for _ in range(times):
             if random.random() < keep_prob:
-                # ✅ mantieni la frase intatta
-                outputs.append(' '.join(words))
+                outputs.append(words)  # ✅ mantieni come lista di token
             else:
-                # 🔁 corrompi ogni parola
                 corrupted = [self.corrupt_word_multiple(word, corruption_prob) for word in words]
-                outputs.append(' '.join(corrupted))
+                outputs.append(corrupted)
         return outputs
+
     def buildDictionary(self):
         """
         Reads a dataset, tokenizes sentences, and builds word dictionaries.
