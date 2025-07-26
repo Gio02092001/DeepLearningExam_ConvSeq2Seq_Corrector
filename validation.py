@@ -30,7 +30,8 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
     total_loss = 0.0
     total_ppl_tokens = 0
 
-    loss_val = torch.nn.CrossEntropyLoss(reduction="sum")
+    pad_token_id = builder.targetPAD  # Assicurati che sia corretto
+    loss_val = torch.nn.CrossEntropyLoss(ignore_index=pad_token_id, reduction="sum")
 
     with torch.no_grad():
         for batch in tqdm(validation_loader, desc="Validation Inference"):
@@ -47,8 +48,9 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
             ).item()
             # + conto token non-pad
             # nonpad = (tgt != pad_token_id).sum().item()
+            nonpad = (tgt != pad_token_id).sum().item()
             total_loss += loss_tf
-            total_ppl_tokens += tgt.numel()
+            total_ppl_tokens += nonpad
             # Stampa dell'input (raw token ids)
             #print("Input ids:", src.tolist())
 
