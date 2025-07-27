@@ -171,8 +171,17 @@ class BuildDictionary_Map:
         """
         corruption_prob = corruption_prob or self.corruption_prob
         times = times or self.times
-        return [' '.join(self.corrupt_word_multiple(word, corruption_prob) for word in words) for _ in range(times)]
 
+        results = []
+        for _ in range(times):
+            if random.random() < keep_prob:
+                # ✅ mantieni la frase intatta
+                results.append(' '.join(words))
+            else:
+                # 🔁 corrompi parola per parola
+                corrupted = [self.corrupt_word_multiple(word, corruption_prob) for word in words]
+                results.append(' '.join(corrupted))
+        return results
     def buildDictionary(self):
         """
         Reads a dataset, tokenizes sentences, and builds word dictionaries.
