@@ -16,7 +16,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from DataLoader import TranslationDataset, collate_equal_length_fn, create_equal_length_batches
-from Test import index_to_word
+
 from validation import validation
 
 
