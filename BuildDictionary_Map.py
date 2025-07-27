@@ -165,18 +165,13 @@ class BuildDictionary_Map:
             else:
                 return ''.join(corrupted_word)
 
-    def corrupt_sentence(self, words, corruption_prob=None, times=None, keep_prob=0.1):
+    def corrupt_sentence(self, words, corruption_prob=None, times=None):
+        """
+        Corrupts a sentence by applying corruption logic to each word in the sentence.
+        """
         corruption_prob = corruption_prob or self.corruption_prob
         times = times or self.times
-
-        outputs = []
-        for _ in range(times):
-            if random.random() < keep_prob:
-                outputs.append(words)  # ✅ mantieni come lista di token
-            else:
-                corrupted = [self.corrupt_word_multiple(word, corruption_prob) for word in words]
-                outputs.append(corrupted)
-        return outputs
+        return [' '.join(self.corrupt_word_multiple(word, corruption_prob) for word in words) for _ in range(times)]
 
     def buildDictionary(self):
         """
