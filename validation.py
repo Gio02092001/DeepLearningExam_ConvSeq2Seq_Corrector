@@ -7,6 +7,8 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from nltk.translate.gleu_score import sentence_gleu
 import editdistance
 
+from Test import index_to_word
+
 
 def validation(model, validation_loader, index_to_target_word,builder, beam_width=5,  device=None):
     """
@@ -90,8 +92,8 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
                 ref_sentence = " ".join(ref_words)
                 ref_sentences.append(ref_sentence)
 
-                inp_words = [index_to_target_word[i] for i in inp_ids
-                             if index_to_target_word[i] not in ['<pad>', '<sos>', '<eos>']]
+                inp_words = [index_to_word[i] for i in inp_ids
+                             if index_to_word[i] not in ['<pad>', '<sos>', '<eos>']]
 
 
                 # Token-level accuracy
