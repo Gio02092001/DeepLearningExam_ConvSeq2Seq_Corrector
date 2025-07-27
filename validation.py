@@ -3,6 +3,10 @@ import math
 import sacrebleu
 from rouge_score import rouge_scorer
 from tqdm import tqdm
+from sklearn.metrics import precision_score, recall_score, f1_score
+from nltk.translate.gleu_score import sentence_gleu
+import editdistance
+
 
 def validation(model, validation_loader, index_to_target_word,builder, beam_width=5,  device=None):
     """
@@ -29,6 +33,17 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
     total_tokens = 0
     total_loss = 0.0
     total_ppl_tokens = 0
+
+    total_fp = 0
+    total_sentences = 0
+    total_sentence_errors = 0
+    total_character_errors = 0
+    total_characters = 0
+    total_word_errors = 0
+    total_words = 0
+    all_preds_bin = []
+    all_targets_bin = []
+    gleu_scores = []
 
     pad_token_id = builder.targetPAD  # Assicurati che sia corretto
     loss_val = torch.nn.CrossEntropyLoss(ignore_index=pad_token_id, reduction="sum")
@@ -80,6 +95,30 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
                 total_correct_tokens += correct
                 total_tokens += min_len
 
+                # ✅ GLEU
+                gleu_scores.append(sentence_gleu([ref_words], pred_words))
+
+                # ✅ CER
+                total_character_errors += editdistance.eval(''.join(pred_words), ''.join(ref_words))
+                total_characters += len(''.join(ref_words))
+
+                # ✅ WER
+                total_word_errors += editdistance.eval(pred_words, ref_words)
+                total_words += len(ref_words)
+
+                # ✅ SER
+                total_sentence_errors += int(pred_words != ref_words)
+                total_sentences += 1
+
+                # ✅ Precision/Recall binario
+                pred_change = int(pred_words != inp_words)
+                ref_change = int(ref_words != inp_words)
+                all_preds_bin.append(pred_change)
+                all_targets_bin.append(ref_change)
+
+                if pred_change and not ref_change:
+                    total_fp += 1
+
 
             all_hypotheses.extend(pred_sentences)
             all_references.extend(ref_sentences)
@@ -102,6 +141,19 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
 
     ppl = math.exp(total_loss / total_ppl_tokens)
 
+    precision = precision_score(all_targets_bin, all_preds_bin, zero_division=0)
+    recall = recall_score(all_targets_bin, all_preds_bin, zero_division=0)
+    f1 = f1_score(all_targets_bin, all_preds_bin, zero_division=0)
+    f05 = (1.25 * precision * recall) / (0.25 * precision + recall + 1e-8) if (precision + recall) > 0 else 0.0
+    accuracy_bin = sum(int(p == r) for p, r in zip(all_preds_bin, all_targets_bin)) / len(all_preds_bin)
+    false_positive_rate = total_fp / (
+                total_fp + sum(int(not r and not p) for p, r in zip(all_preds_bin, all_targets_bin)) + 1e-8)
+    cer = total_character_errors / total_characters if total_characters > 0 else 0.0
+    wer = total_word_errors / total_words if total_words > 0 else 0.0
+    ser = total_sentence_errors / total_sentences if total_sentences > 0 else 0.0
+    gleu = sum(gleu_scores) / len(gleu_scores) if gleu_scores else 0.0
+
+
     #model.train()
     return {
         'bleu': bleu,
@@ -110,7 +162,17 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
         'rouge2': avg_rouge2,
         'rougeL': avg_rougeL,
         'token_accuracy': token_accuracy,
-        'perplexity': ppl
+        'perplexity': ppl,
+        'precision': precision,
+        'recall': recall,
+        'f1': f1,
+        'f0.5': f05,
+        'binary_accuracy': accuracy_bin,
+        'false_positive_rate': false_positive_rate,
+        'cer': cer,
+        'wer': wer,
+        'ser': ser,
+        'gleu': gleu
     }
 
 

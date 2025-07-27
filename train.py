@@ -242,13 +242,24 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         )
         current_metric= valid_metrics['chrf']
         tqdm.write(
-            f"Validation — BLEU: {valid_metrics['bleu']:.2f}, "
+            f"Validation — "
+            f"BLEU: {valid_metrics['bleu']:.2f}, "
             f"CHR-F: {valid_metrics['chrf']:.2f}, "
             f"ROUGE-1: {valid_metrics['rouge1']:.4f}, "
             f"ROUGE-2: {valid_metrics['rouge2']:.4f}, "
             f"ROUGE-L: {valid_metrics['rougeL']:.4f}, "
-            f"Acc: {valid_metrics['token_accuracy']:.2%},"
-            f"Perplexity: {valid_metrics['perplexity']:.2f}"
+            f"Accuracy: {valid_metrics['token_accuracy']:.2%}, "
+            f"PPL: {valid_metrics['perplexity']:.2f}, "
+            f"Precision: {valid_metrics['precision']:.2%}, "
+            f"Recall: {valid_metrics['recall']:.2%}, "
+            f"F₀.₅: {valid_metrics['f0.5']:.2%}, "
+            f"F₁: {valid_metrics['f1']:.2%}, "
+            f"BinAcc: {valid_metrics['binary_accuracy']:.2%}, "
+            f"FPR: {valid_metrics['false_positive_rate']:.2%}, "
+            f"CER: {valid_metrics['cer']:.2%}, "
+            f"WER: {valid_metrics['wer']:.2%}, "
+            f"SER: {valid_metrics['ser']:.2%}, "
+            f"GLEU: {valid_metrics['gleu']:.2f}"
         )
 
         # gestione della patience
