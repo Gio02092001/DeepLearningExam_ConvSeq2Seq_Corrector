@@ -162,7 +162,8 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
     ser = jiwer.sentence_error_rate([ref_sentences], [pred_sentences])
     gleu = sum(gleu_scores) / len(gleu_scores) if gleu_scores else 0.0
 
-   """ CHECK THESE METRICS NON MI CONVINCONO """
+   # Check these metrics non mi convincono
+
     #model.train()
     return {
         'bleu': bleu,
