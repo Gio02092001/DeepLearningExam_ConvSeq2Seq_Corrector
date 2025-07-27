@@ -174,7 +174,7 @@ class BuildDictionary_Map:
 
         results = []
         for _ in range(times):
-            if random.random() < keep_prob:
+            if random.random() < 0.1:
                 # ✅ mantieni la frase intatta
                 results.append(' '.join(words))
             else:
