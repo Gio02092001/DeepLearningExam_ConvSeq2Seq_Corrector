@@ -1,3 +1,4 @@
+import jiwer
 import torch
 import math
 import sacrebleu
@@ -6,7 +7,7 @@ from tqdm import tqdm
 from sklearn.metrics import precision_score, recall_score, f1_score
 from nltk.translate.gleu_score import sentence_gleu
 import editdistance
-from jiwer import wer, cer, sentence_error_rate
+
 
 
 
@@ -156,9 +157,9 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
     accuracy_bin = sum(int(p == r) for p, r in zip(all_preds_bin, all_targets_bin)) / len(all_preds_bin)
     false_positive_rate = total_fp / (
                 total_fp + sum(int(not r and not p) for p, r in zip(all_preds_bin, all_targets_bin)) + 1e-8)
-    cer = cer(ref_sentence, pred_sentence)
-    wer = wer(ref_sentence, pred_sentence)
-    ser = sentence_error_rate([ref_sentence], [pred_sentence])
+    cer = jiwer.cer(ref_sentences, pred_sentences)
+    wer = jiwer.wer(ref_sentences, pred_sentences)
+    ser = jiwer.sentence_error_rate([ref_sentences], [pred_sentences])
     gleu = sum(gleu_scores) / len(gleu_scores) if gleu_scores else 0.0
 
 
