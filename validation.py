@@ -7,10 +7,10 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from nltk.translate.gleu_score import sentence_gleu
 import editdistance
 
-from Test import index_to_word
 
 
-def validation(model, validation_loader, index_to_target_word,builder, beam_width=5,  device=None):
+
+def validation(model, validation_loader, index_to_target_word, index_to_word, builder, beam_width=5,  device=None):
     """
     Esegue la validazione in modalità inferenza (senza teacher forcing).
 

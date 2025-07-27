@@ -16,6 +16,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from DataLoader import TranslationDataset, collate_equal_length_fn, create_equal_length_batches
+from Test import index_to_word
 from validation import validation
 
 
@@ -236,6 +237,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             model,
             validationLoader,
             index_to_target_word_dict,
+            index_to_word=index_to_word_dict,
             beam_width=5,
             device=model.device,
             builder=builder
