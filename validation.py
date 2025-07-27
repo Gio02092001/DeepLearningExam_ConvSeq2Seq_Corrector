@@ -75,7 +75,8 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
             # Decodifica da id a stringhe e stampa prediction
             pred_sentences = []
             ref_sentences = []
-            for pred_ids, ref_ids in zip(predictions, tgt.tolist()):
+            for pred_ids, ref_ids, inp_ids in zip(predictions, tgt.tolist(), src.tolist()):
+
                 # Decodifica predizione
                 words = [index_to_target_word[i] for i in pred_ids
                          if index_to_target_word[i] not in ['<pad>','<sos>','<eos>']]
@@ -89,6 +90,10 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
                 ref_sentence = " ".join(ref_words)
                 ref_sentences.append(ref_sentence)
 
+                inp_words = [index_to_target_word[i] for i in inp_ids
+                             if index_to_target_word[i] not in ['<pad>', '<sos>', '<eos>']]
+
+
                 # Token-level accuracy
                 min_len = min(len(pred_ids), len(ref_ids))
                 correct = sum((pred_ids[i] == ref_ids[i]) for i in range(min_len))
@@ -96,22 +101,22 @@ def validation(model, validation_loader, index_to_target_word,builder, beam_widt
                 total_tokens += min_len
 
                 # ✅ GLEU
-                gleu_scores.append(sentence_gleu([ref_words], pred_words))
+                gleu_scores.append(sentence_gleu([ref_words], words))
 
                 # ✅ CER
-                total_character_errors += editdistance.eval(''.join(pred_words), ''.join(ref_words))
+                total_character_errors += editdistance.eval(''.join(words), ''.join(ref_words))
                 total_characters += len(''.join(ref_words))
 
                 # ✅ WER
-                total_word_errors += editdistance.eval(pred_words, ref_words)
+                total_word_errors += editdistance.eval(words, ref_words)
                 total_words += len(ref_words)
 
                 # ✅ SER
-                total_sentence_errors += int(pred_words != ref_words)
+                total_sentence_errors += int(words != ref_words)
                 total_sentences += 1
 
                 # ✅ Precision/Recall binario
-                pred_change = int(pred_words != inp_words)
+                pred_change = int(words != inp_words)
                 ref_change = int(ref_words != inp_words)
                 all_preds_bin.append(pred_change)
                 all_targets_bin.append(ref_change)
