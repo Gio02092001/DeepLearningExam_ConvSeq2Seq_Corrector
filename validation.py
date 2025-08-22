@@ -159,7 +159,7 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
                 total_fp + sum(int(not r and not p) for p, r in zip(all_preds_bin, all_targets_bin)) + 1e-8)
     cer = jiwer.cer(ref_sentences, pred_sentences)
     wer = jiwer.wer(ref_sentences, pred_sentences)
-    ser = jiwer.sentence_error_rate([ref_sentences], [pred_sentences])
+    ser = total_sentence_errors / total_sentences if total_sentences > 0 else 0.0
     gleu = sum(gleu_scores) / len(gleu_scores) if gleu_scores else 0.0
 
    # Check these metrics non mi convincono
