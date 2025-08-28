@@ -1,5 +1,10 @@
 import os
-
+import shutil
+from tensorflow import timestamp
+import time
+from datetime import datetime
+import random
+import shutil
 import torch
 import yaml
 from sacremoses import MosesTokenizer
@@ -22,12 +27,12 @@ def load_parameters(config_path="Config/config.yaml"):
     return config
 
 
-def load_dataset(builder, config):
+def load_dataset(builder, config, timestamp):
     """
     Load precomputed dictionaries and split the dataset.
     """
     word_dict, target_word_dict, sentence_map, index_to_target_word_dict, index_to_word_dict = builder.loadDictionaries(
-        config["dataSet_Sentence"], config["dataSet_repetition"], config["dataSet_probability"]
+        config["dataSet_Sentence"], config["dataSet_repetition"], config["dataSet_probability"], timestamp
     )
 
     vocab_size = len(word_dict)+1
@@ -73,6 +78,7 @@ def main():
     """
     Main function to build and execute all model functions.
     """
+
     tqdm.write("--------------START SETUP----------------------")
     pretrained=None
     ckpt=None
@@ -101,20 +107,29 @@ def main():
         # fai qualcosa con file_path
     else:
         config = load_parameters()
+    if ckpt is None:
+        timestamp = str(int(time.time()))
+        os.mkdir(f"models/{timestamp}")
+        # time.sleep(0)
+        src_path = "Config/config.yaml"
+        dst_path = f"models/{timestamp}"
+        shutil.copy2(src_path, dst_path)
 
+    else:
+        timestamp = pretrained
 
     # Scommenta questi per creare gli ultimi dizionari grossi
     builder = BuildDictionary_Map(config["dataSet_Sentence"], config["dataSet_repetition"],
-                                  config["dataSet_probability"])
-
-    if not os.path.exists(f'data/dictionaries/{config["dataSet_Sentence"]}x{config["dataSet_repetition"]}x{config["dataSet_probability"]}_SentenceMap.pkl'):
-        builder.buildDictionary()
-
-
+                                  config["dataSet_probability"], config["BPE"],timestamp)
+    if config["BPE"]==0:
+        if not os.path.exists(f'data/dictionaries/{config["dataSet_Sentence"]}x{config["dataSet_repetition"]}x{config["dataSet_probability"]}_SentenceMap.pkl'):
+            builder.buildDictionary(timestamp)
+    else:
+        if not os.path.exists(f'data/dictionaries/{config["dataSet_Sentence"]}x{config["dataSet_repetition"]}x{config["dataSet_probability"]}_SentenceMap_BPE.pkl'):
+            builder.buildDictionary(timestamp)
 
     word_dict, target_word_dict, sentence_map, vocab_size, target_vocab_size, train_data, validation_data, index_to_target_word_dict, index_to_word_dict = load_dataset(
-        builder, config)
-
+        builder, config, timestamp)
 
     # Initialize Model_Old, Optimizer, and Scheduler
     model = ConvModel_New(
@@ -122,7 +137,6 @@ def main():
         config["p_dropout"], config["hidden_dim"], config["kernel_width"], config["encoderLayer"],
         config["decoderLayer"], builder.sourceUNK, device
     )
-
 
     model.to(device)
 
@@ -136,9 +150,11 @@ def main():
         model.load_state_dict(ckpt["model_state"])
         optimizer.load_state_dict(ckpt["optimizer_state"])
 
+
+
     # Execute model training
     train(model, optimizer, scheduler, train_data, builder, word_dict, config["renormalizationLimit"],
-          config["maximumlearningRateLimit"], target_word_dict, validation_data, config["fixedNumberOfInputElements"],config["batchSize"], index_to_target_word_dict, config['patience'], index_to_word_dict, ckpt, pretrained)
+          config["maximumlearningRateLimit"], target_word_dict, validation_data, config["fixedNumberOfInputElements"],config["batchSize"], index_to_target_word_dict, config['patience'], index_to_word_dict,timestamp, ckpt, pretrained)
 
 
 if __name__ == "__main__":

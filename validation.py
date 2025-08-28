@@ -81,22 +81,44 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
             ref_sentences = []
             for pred_ids, ref_ids, inp_ids in zip(predictions, tgt.tolist(), src.tolist()):
 
-                # Decodifica predizione
-                words = [index_to_target_word[i] for i in pred_ids
-                         if index_to_target_word[i] not in ['<pad>','<sos>','<eos>']]
-                sentence = " ".join(words)
-                #print("Prediction:", sentence)
+                if builder.bpe == 0:
+                    # --- Predizione ---
+                    words = [index_to_target_word[i] for i in pred_ids
+                             if index_to_target_word[i] not in ['<pad>', '<sos>', '<eos>']]
+                    sentence = " ".join(words)
+
+                    # --- Riferimento ---
+                    ref_words = [index_to_target_word[i] for i in ref_ids
+                                 if index_to_target_word[i] not in ['<pad>', '<sos>', '<eos>']]
+                    ref_sentence = " ".join(ref_words)
+
+                    # --- Input ---
+                    inp_words = [index_to_word[i] for i in inp_ids
+                                 if index_to_word[i] not in ['<pad>', '<sos>', '<eos>']]
+                    inp_sentence = " ".join(inp_words)
+
+                else:
+                    # --- Predizione ---
+                    sentence = builder.bpe_tokenizer.decode([
+                        i for i in pred_ids if i not in [builder.targetPAD, builder.targetSOS, builder.targetEOS]
+                    ])
+                    words = sentence.split()
+
+                    # --- Riferimento ---
+                    ref_sentence = builder.bpe_tokenizer.decode([
+                        i for i in ref_ids if i not in [builder.targetPAD, builder.targetSOS, builder.targetEOS]
+                    ])
+                    ref_words = ref_sentence.split()
+
+                    # --- Input ---
+                    inp_sentence = builder.bpe_tokenizer.decode([
+                        i for i in inp_ids if i not in [builder.sourcePAD, builder.sourceSOS, builder.sourceEOS]
+                    ])
+                    inp_words = inp_sentence.split()
+
+                    # ✅ Append qui (vale per entrambi i casi)
                 pred_sentences.append(sentence)
-
-                # Decodifica riferimento
-                ref_words = [index_to_target_word[i] for i in ref_ids
-                             if index_to_target_word[i] not in ['<pad>','<sos>','<eos>']]
-                ref_sentence = " ".join(ref_words)
                 ref_sentences.append(ref_sentence)
-
-                inp_words = [index_to_word[i] for i in inp_ids
-                             if index_to_word[i] not in ['<pad>', '<sos>', '<eos>']]
-
 
                 # Token-level accuracy
                 min_len = min(len(pred_ids), len(ref_ids))

@@ -1,12 +1,19 @@
 import pickle
 import string
 import random
+import re
 
 import chardet
 import nltk
 import pandas as pd
 from nltk import word_tokenize, RegexpTokenizer, punkt
+from tensorflow import timestamp
+from tokenizers.processors import TemplateProcessing
 from tqdm import tqdm
+from tokenizers import Tokenizer, models, pre_tokenizers, trainers, processors, normalizers
+from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.trainers import BpeTrainer
+
 
 
 #nltk.download('punkt')
@@ -18,14 +25,16 @@ class BuildDictionary_Map:
     times = 5
     sentenceNumber = 100000
 
-    def __init__(self, sentence, rep, p):
+    def __init__(self, sentence, rep, p, bpe, timestamp):
         self.sourceSOS = self.sourceEOS = self.sourcePAD = self.sourceUNK = 0
         self.targetSOS = self.targetEOS = self.targetPAD = 0
         self.corruption_prob=p
         self.sentenceNumber = sentence
         self.times=rep
+        self.bpe=bpe
+        self.bpe_tokenizer=None
 
-    def loadDictionaries(self, sentence, rep, p):
+    def loadDictionaries(self, sentence, rep, p, timestamp):
         """
         Load precomputed dictionaries.
         """
@@ -43,27 +52,53 @@ class BuildDictionary_Map:
             except FileNotFoundError:
                 tqdm.write(f"The file '{filename}' was not found.")
                 return {}
+        if self.bpe==0:
+            index_to_word_dict = load_pickle(f'data/dictionaries/{sentence}_index_to_word.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"],
+                                    True)
+            word_dict = load_pickle(f'data/dictionaries/{sentence}_word_to_index.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"], False)
+            target_word_dict = load_pickle(f'data/dictionaries/{sentence}_target_word_to_index.pkl',
+                                           ["<sos>", "<eos>", "<pad>"], False)
+            index_to_target_word_dict=load_pickle(f'data/dictionaries/{sentence}_index_to_target_word.pkl',
+                                                  ["<sos>", "<eos>", "<pad>"],True)
+            self.sourceSOS = word_dict["<sos>"]
+            self.sourceEOS = word_dict["<eos>"]
+            self.sourcePAD = word_dict["<pad>"]
+            self.sourceUNK = word_dict["<unk>"]
+            self.targetSOS = target_word_dict["<sos>"]
+            self.targetEOS = target_word_dict["<eos>"]
+            self.targetPAD = target_word_dict["<pad>"]
 
-        index_to_word_dict = load_pickle(f'data/dictionaries/{sentence}_index_to_word.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"],
-                                True)
-        word_dict = load_pickle(f'data/dictionaries/{sentence}_word_to_index.pkl', ["<sos>", "<eos>", "<pad>", "<unk>"], False)
-        target_word_dict = load_pickle(f'data/dictionaries/{sentence}_target_word_to_index.pkl',
-                                       ["<sos>", "<eos>", "<pad>"], False)
-        index_to_target_word_dict=load_pickle(f'data/dictionaries/{sentence}_index_to_target_word.pkl',
-                                              ["<sos>", "<eos>", "<pad>"],True)
+        else:
+            index_to_word_dict = load_pickle(f'data/dictionaries/{sentence}_index_to_word_BPE.pkl',
+                                             ["<sos>", "<eos>", "<pad>", "<unk>"],
+                                             True)
+            word_dict = load_pickle(f'data/dictionaries/{sentence}_word_to_index_BPE.pkl',
+                                    ["<sos>", "<eos>", "<pad>", "<unk>"], False)
+            target_word_dict = load_pickle(f'data/dictionaries/{sentence}_target_word_to_index_BPE.pkl',
+                                           ["<sos>", "<eos>", "<pad>"], False)
+            index_to_target_word_dict = load_pickle(f'data/dictionaries/{sentence}_index_to_target_word_BPE.pkl',
+                                                    ["<sos>", "<eos>", "<pad>"], True)
+            self.bpe_tokenizer=Tokenizer.from_file(f"data/dictionaries/bpe_tokenizer_{self.sentenceNumber}x{self.times}x{self.corruption_prob}.json")
+            self.sourcePAD = self.bpe_tokenizer.token_to_id("<pad>")
+            self.sourceUNK = self.bpe_tokenizer.token_to_id("<unk>")
+            self.sourceSOS = self.bpe_tokenizer.token_to_id("<sos>")
+            self.sourceEOS = self.bpe_tokenizer.token_to_id("<eos>")
 
-        self.sourceSOS = word_dict["<sos>"]
-        self.sourceEOS = word_dict["<eos>"]
-        self.sourcePAD = word_dict["<pad>"]
-        self.sourceUNK = word_dict["<unk>"]
-        self.targetSOS = target_word_dict["<sos>"]
-        self.targetEOS = target_word_dict["<eos>"]
-        self.targetPAD = target_word_dict["<pad>"]
+            self.targetPAD = self.bpe_tokenizer.token_to_id("<pad>")
+            self.targetUNK = self.bpe_tokenizer.token_to_id("<unk>")
+            self.targetSOS = self.bpe_tokenizer.token_to_id("<sos>")
+            self.targetEOS = self.bpe_tokenizer.token_to_id("<eos>")
 
         try:
-            with open(f'data/dictionaries/{sentence}x{rep}x{p}_SentenceMap.pkl', 'rb') as f:
-                sentenceMap = pickle.load(f)
-            tqdm.write("Sentence map has been loaded.")
+            if self.bpe==0:
+                with open(f'data/dictionaries/{sentence}x{rep}x{p}_SentenceMap.pkl', 'rb') as f:
+                    sentenceMap = pickle.load(f)
+                tqdm.write("Sentence map has been loaded.")
+            else:
+                with open(f'data/dictionaries/{sentence}x{rep}x{p}_SentenceMap_BPE.pkl', 'rb') as f:
+                    sentenceMap = pickle.load(f)
+                tqdm.write("Sentence map has been loaded.")
+
         except FileNotFoundError:
             tqdm.write(f"The file '{sentence}x{rep}x{p}SentenceMap.pkl' was not found.")
             sentenceMap = {}
@@ -182,7 +217,8 @@ class BuildDictionary_Map:
                 corrupted = [self.corrupt_word_multiple(word, corruption_prob) for word in words]
                 results.append(' '.join(corrupted))
         return results
-    def buildDictionary(self):
+
+    def buildDictionary(self, timestamp):
         """
         Reads a dataset, tokenizes sentences, and builds word dictionaries.
         """
@@ -192,46 +228,111 @@ class BuildDictionary_Map:
         #encoding_info = chardet.detect(article)
         #tqdm.write(encoding_info)
         tqdm.write("Tokenizing sentences...")
-        sentences = self.tokenizer.tokenize(article)
+        if self.bpe==0:
+            sentences = self.tokenizer.tokenize(article)
 
-        all_words = []
-        all_target_words=[]
-        all_sentences = {}
+            all_words = []
+            all_target_words=[]
+            all_sentences = {}
 
-        for sentence in tqdm(sentences[:self.sentenceNumber], desc="Processing sentences"):
-            #tqdm.write(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
-            words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
-            finalSentence = ' '.join(words)
-            all_words.extend(words)
-            all_target_words.extend(words)
+            for sentence in tqdm(sentences[:self.sentenceNumber], desc="Processing sentences"):
+                #tqdm.write(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
+                words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
+                finalSentence = ' '.join(words)
+                all_words.extend(words)
+                all_target_words.extend(words)
 
-            for corrupted_sentence in self.corrupt_sentence(words):
-                corrupted_words = [word for word in word_tokenize(corrupted_sentence) if word not in string.punctuation]
-                all_words.extend(corrupted_words)
-                all_sentences.setdefault(corrupted_sentence, finalSentence)
+                for corrupted_sentence in self.corrupt_sentence(words):
+                    corrupted_words = [word for word in word_tokenize(corrupted_sentence) if word not in string.punctuation]
+                    all_words.extend(corrupted_words)
+                    all_sentences.setdefault(corrupted_sentence, finalSentence)
 
-        index_to_word = {idx: word for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
-        word_to_index = {word: idx for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
-        target_word_to_index = {word: idx for idx, word in enumerate(pd.Series(all_target_words).drop_duplicates())}
-        index_to_target_word = {idx: word for idx, word in enumerate(pd.Series(all_target_words).drop_duplicates())}
+            index_to_word = {idx: word for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
+            word_to_index = {word: idx for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
+            target_word_to_index = {word: idx for idx, word in enumerate(pd.Series(all_target_words).drop_duplicates())}
+            index_to_target_word = {idx: word for idx, word in enumerate(pd.Series(all_target_words).drop_duplicates())}
 
-        with open(f'data/dictionaries/{self.sentenceNumber}_word_to_index.pkl', 'wb') as f:
-            pickle.dump(word_to_index, f)
+            with open(f'data/dictionaries/{self.sentenceNumber}_word_to_index.pkl', 'wb') as f:
+                pickle.dump(word_to_index, f)
 
-        with open(f'data/dictionaries/{self.sentenceNumber}_target_word_to_index.pkl', 'wb') as f:
-            pickle.dump(target_word_to_index, f)
+            with open(f'data/dictionaries/{self.sentenceNumber}_target_word_to_index.pkl', 'wb') as f:
+                pickle.dump(target_word_to_index, f)
 
-        with open(f'data/dictionaries/{self.sentenceNumber}_index_to_target_word.pkl', 'wb') as f:
-            pickle.dump(index_to_target_word, f)
+            with open(f'data/dictionaries/{self.sentenceNumber}_index_to_target_word.pkl', 'wb') as f:
+                pickle.dump(index_to_target_word, f)
 
-        with open(f'data/dictionaries/{self.sentenceNumber}_index_to_word.pkl', 'wb') as f:
-            pickle.dump(index_to_word, f)
+            with open(f'data/dictionaries/{self.sentenceNumber}_index_to_word.pkl', 'wb') as f:
+                pickle.dump(index_to_word, f)
 
-        with open(f'data/dictionaries/{self.sentenceNumber}x{self.times}x{self.corruption_prob}_SentenceMap.pkl',
-                  'wb') as f:
-            pickle.dump(all_sentences, f)
+            with open(f'data/dictionaries/{self.sentenceNumber}x{self.times}x{self.corruption_prob}_SentenceMap.pkl',
+                      'wb') as f:
+                pickle.dump(all_sentences, f)
 
-        tqdm.write("Word-to-index dictionary has been saved successfully.")
+            tqdm.write("Word-to-index dictionary has been saved successfully.")
+        else:
+            tqdm.write("Preparing BPE tokenizer...")
+
+            # 🔹 1. Splitting in sentences (. ! ?)
+
+            sentences = re.split(r'[.!?]', article)
+
+            all_texts = []
+            for sentence in tqdm(sentences[:self.sentenceNumber], desc="Collecting texts for BPE"):
+                words = [w for w in sentence.split() if w not in string.punctuation]
+                if words:
+                    all_texts.append(' '.join(words))
+
+            # 🔹 2. Init BPE tokenizer
+            tokenizer = Tokenizer(models.BPE())
+            tokenizer.normalizer = normalizers.NFKC()
+            tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
+
+            # 🔹 3. Trainer (vocab size controlla granularità)
+            trainer = trainers.BpeTrainer(vocab_size=30000, special_tokens=["<sos>", "<eos>", "<pad>", "<unk>"])
+
+            # 🔹 4. Train
+            tokenizer.train_from_iterator(all_texts, trainer)
+
+
+
+            # 🔹 6. Ottieni vocabolario
+            vocab = tokenizer.get_vocab()
+            word_to_index = {word: idx for word, idx in vocab.items()}
+            index_to_word = {idx: word for word, idx in vocab.items()}
+
+            # per semplicità target = stesso vocabolario
+            target_word_to_index = word_to_index
+            index_to_target_word = index_to_word
+
+            # 🔹 7. Genera il SentenceMap (corrupted → originale)
+            all_sentences = {}
+            for sentence in tqdm(all_texts, desc="Corrupting with BPE"):
+                words = sentence.split()
+                for corrupted_sentence in self.corrupt_sentence(words):
+                    all_sentences[corrupted_sentence] = sentence
+
+            # 🔹 8. Salvataggi
+            with open(f'data/dictionaries/{self.sentenceNumber}_word_to_index_BPE.pkl', 'wb') as f:
+                pickle.dump(word_to_index, f)
+
+            with open(f'data/dictionaries/{self.sentenceNumber}_target_word_to_index_BPE.pkl', 'wb') as f:
+                pickle.dump(target_word_to_index, f)
+
+            with open(f'data/dictionaries/{self.sentenceNumber}_index_to_target_word_BPE.pkl', 'wb') as f:
+                pickle.dump(index_to_target_word, f)
+
+            with open(f'data/dictionaries/{self.sentenceNumber}_index_to_word_BPE.pkl', 'wb') as f:
+                pickle.dump(index_to_word, f)
+
+            with open(f'data/dictionaries/{self.sentenceNumber}x{self.times}x{self.corruption_prob}_SentenceMap_BPE.pkl',
+                      'wb') as f:
+                pickle.dump(all_sentences, f)
+
+            # 🔹 9. Salva anche il tokenizer BPE per uso futuro
+            tokenizer.save(f"data/dictionaries/bpe_tokenizer_{self.sentenceNumber}x{self.times}x{self.corruption_prob}.json")
+
+            tqdm.write("BPE tokenizer and dictionaries saved successfully.")
+
 
     def splitSet(self, sentenceMap, validationSet):
         """

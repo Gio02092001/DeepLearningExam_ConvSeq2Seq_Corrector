@@ -14,25 +14,18 @@ from torch.utils.data import DataLoader
 from torchinfo import summary
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+from torch.nn.utils.rnn import pad_sequence
 
-from DataLoader import TranslationDataset, collate_equal_length_fn, create_equal_length_batches
+from DataLoader import TranslationDataset, create_equal_length_batches
 
 from validation import validation
 
 
 
 def train(model, optimizer, scheduler, train_data, builder, word_dict, renormalizationLimit, maximumlearningRateLimit,
-          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience, index_to_word_dict, ckpt=None, pretrained=None):
+          target_word_dict,validation_data,fixedNumberOfInputElements, batch_size, index_to_target_word_dict, patience, index_to_word_dict,timestamp, ckpt=None, pretrained=None):
     model.train()
-    if ckpt is None:
-        timestamp = str(int(time.time()))
-        os.mkdir(f"models/{timestamp}")
-        #time.sleep(0)
-        src_path = "Config/config.yaml"
-        dst_path = f"models/{timestamp}"
-        shutil.copy2(src_path, dst_path)
-    else:
-        timestamp=pretrained
+
         
     patience = patience
     no_improve = 0
@@ -40,7 +33,10 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     model.train()
     loss_fn = torch.nn.CrossEntropyLoss(reduction="mean")  # Standard loss, no need to ignore padding
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
-    tokenizer = MosesTokenizer('en')
+    if builder.bpe==0:
+        tokenizer = MosesTokenizer('en')
+    else:
+        tokenizer=builder.bpe_tokenizer
     global_step = 0
 
     # Create dataset
@@ -79,7 +75,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     train_loader = DataLoader(
         dataset,
         batch_sampler=batch_sampler,
-        collate_fn=collate_equal_length_fn,
+        collate_fn=dataset.collate_equal_length_fn,
         num_workers=workers,
         pin_memory=torch.cuda.is_available()  # Only pin memory if using GPU
     )
@@ -96,7 +92,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     validationLoader = DataLoader(
         validation_dataset,
         batch_sampler=batch_sampler_validation,
-        collate_fn=collate_equal_length_fn,
+        collate_fn=validation_dataset.collate_equal_length_fn,
         num_workers=workers,
         pin_memory=is_cuda  # Only pin memory if using GPU
     )
@@ -135,33 +131,66 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
 
             corrupted_ids = []
-            for sent_ids in source:
-                # 2) idx → parola
-                words = [
-                    index_to_word_dict.get(int(w), "<UNK>")
-                    for w in sent_ids
-                ]
-                # 3) applica corrupt_sentence: ottieni una lista di frasi (times versioni)
-                corrupted_sentences = builder.corrupt_sentence(
-                    words,
-                    corruption_prob=0.02,
-                    times=1
-                )
-                # 4) prendi la prima (o randomly una delle volte, se vuoi variarlo)
-                corrupted_words = corrupted_sentences[0].split()
+            if builder.bpe == 0:
+                for sent_ids in source:
+                    # 2) idx → parola
 
-                # 5) parola → idx, con fallback su unk
-                corrupted_idx =[]
-                for w in corrupted_words:
-                    if w == "<UNK>":
-                        corrupted_idx.append(builder.sourceUNK)
-                    else:
-                        corrupted_idx.append(word_dict.get(w, builder.sourceUNK))
+                    words = [
+                        index_to_word_dict.get(int(w), "<UNK>")
+                        for w in sent_ids
+                    ]
+                    # 3) applica corrupt_sentence: ottieni una lista di frasi (times versioni)
+                    corrupted_sentences = builder.corrupt_sentence(
+                        words,
+                        corruption_prob=0.02,
+                        times=1
+                    )
 
-                corrupted_ids.append(corrupted_idx)
+                    # 4) prendi la prima (o randomly una delle volte, se vuoi variarlo)
+                    corrupted_words = corrupted_sentences[0].split()
 
-            # 7) ricostruisci il tensore e rimandalo su GPU
-            source= torch.tensor(corrupted_ids, device=model.device)
+                    # 5) parola → idx, con fallback su unk
+                    corrupted_idx =[]
+                    for w in corrupted_words:
+                        if w == "<UNK>":
+                            corrupted_idx.append(builder.sourceUNK)
+                        else:
+                            corrupted_idx.append(word_dict.get(w, builder.sourceUNK))
+
+                    corrupted_ids.append(corrupted_idx)
+                    # 7) ricostruisci il tensore e rimandalo su GPU
+                    source = torch.tensor(corrupted_ids, device=model.device)
+            else:
+                source_texts = []
+                for sent_ids in source:
+                    words = [index_to_word_dict.get(int(w), "<unk>") for w in sent_ids]
+                    sentence = " ".join(words)
+                    corrupted_sent = builder.corrupt_sentence(
+                        words,
+                        corruption_prob=0.02,
+                        times=1
+                    )[0]  # prendi la prima
+                    source_texts.append(corrupted_sent)
+
+                corrupted_batch = builder.bpe_tokenizer.encode_batch(source_texts)
+                corrupted_ids = [torch.tensor([builder.sourceSOS] + enc.ids + [builder.sourceEOS], dtype=torch.long)
+                  for enc in corrupted_batch]
+                source = pad_sequence(corrupted_ids, batch_first=True, padding_value=builder.sourcePAD).to(model.device)
+                # target: idx → testo → encode con BPE
+                target_texts = []
+                for sent_ids in target:
+                    words = [index_to_target_word_dict.get(int(w), "<unk>") for w in sent_ids]
+                    sentence = " ".join(words)
+                    target_texts.append(sentence)
+
+                target_batch_encoded = builder.bpe_tokenizer.encode_batch(target_texts)
+                target_ids = [torch.tensor([builder.targetSOS] + enc.ids + [builder.targetEOS], dtype=torch.long)
+                                for enc in target_batch_encoded]
+                target = pad_sequence(target_ids, batch_first=True, padding_value=builder.targetPAD).to(model.device)
+
+
+
+
 
             # Forward pass with batch
             predictions, logits = model(source, target)
