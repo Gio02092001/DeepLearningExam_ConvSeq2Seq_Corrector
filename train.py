@@ -243,6 +243,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             loss.backward()
             grad_norm=torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=renormalizationLimit)
             writer.add_scalar('GradNorm/train', grad_norm, global_step=global_step)
+            writer.add_scalar("Loss/epoch_train", epoch_loss / len(train_loader), epochNumber)
+            writer.add_scalar("LR", optimizer.param_groups[0]['lr'], epochNumber)
             writer.flush()
 
             optimizer.step()
@@ -292,6 +294,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             f"SER: {valid_metrics['ser']:.2%}, "
             f"GLEU: {valid_metrics['gleu']:.2f}"
         )
+        for metric_name, value in valid_metrics.items():
+            writer.add_scalar(f"Validation/{metric_name}", value, epochNumber)
 
         # gestione della patience
         if epochNumber == 1:
