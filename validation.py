@@ -7,6 +7,7 @@ from tqdm import tqdm
 from sklearn.metrics import precision_score, recall_score, f1_score
 from nltk.translate.gleu_score import sentence_gleu
 import editdistance
+from sklearn.metrics import confusion_matrix
 
 
 
@@ -155,34 +156,50 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
             all_hypotheses.extend(pred_sentences)
             all_references.extend(ref_sentences)
 
-    # Calcolo metriche corpus-level
+    # --- Metriche corpus-level corrette ---
     bleu = sacrebleu.corpus_bleu(all_hypotheses, [all_references]).score
     chrf = sacrebleu.corpus_chrf(all_hypotheses, [all_references]).score
-    scorer = rouge_scorer.RougeScorer(['rouge1','rouge2','rougeL'], use_stemmer=True)
+    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
     rouge1, rouge2, rougeL = [], [], []
+
     for ref, hyp in zip(all_references, all_hypotheses):
         scores = scorer.score(ref, hyp)
         rouge1.append(scores['rouge1'].fmeasure)
         rouge2.append(scores['rouge2'].fmeasure)
         rougeL.append(scores['rougeL'].fmeasure)
+    avg_rouge1 = sum(rouge1) / len(rouge1) if rouge1 else 0.0
+    avg_rouge2 = sum(rouge2) / len(rouge2) if rouge2 else 0.0
+    avg_rougeL = sum(rougeL) / len(rougeL) if rougeL else 0.0
 
-    avg_rouge1 = sum(rouge1)/len(rouge1) if rouge1 else 0.0
-    avg_rouge2 = sum(rouge2)/len(rouge2) if rouge2 else 0.0
-    avg_rougeL = sum(rougeL)/len(rougeL) if rougeL else 0.0
-    token_accuracy = total_correct_tokens/total_tokens if total_tokens>0 else 0.0
+    # Token accuracy (attenzione agli <sos>/<eos>)
+    token_accuracy = total_correct_tokens / total_tokens if total_tokens > 0 else 0.0
 
+    # Perplexity più robusta
     ppl = math.exp(total_loss / total_ppl_tokens)
 
-    precision = precision_score(all_targets_bin, all_preds_bin, zero_division=0)
-    recall = recall_score(all_targets_bin, all_preds_bin, zero_division=0)
-    f1 = f1_score(all_targets_bin, all_preds_bin, zero_division=0)
-    f05 = (1.25 * precision * recall) / (0.25 * precision + recall + 1e-8) if (precision + recall) > 0 else 0.0
-    accuracy_bin = sum(int(p == r) for p, r in zip(all_preds_bin, all_targets_bin)) / len(all_preds_bin)
-    false_positive_rate = total_fp / (
-                total_fp + sum(int(not r and not p) for p, r in zip(all_preds_bin, all_targets_bin)) + 1e-8)
-    cer = jiwer.cer(ref_sentences, pred_sentences)
-    wer = jiwer.wer(ref_sentences, pred_sentences)
-    ser = total_sentence_errors / total_sentences if total_sentences > 0 else 0.0
+
+
+
+    y_true, y_pred = all_targets_bin, all_preds_bin
+
+    if len(y_true) == 0:
+        precision = recall = f1 = f05 = accuracy_bin = false_positive_rate = 0.0
+    else:
+        precision = precision_score(y_true, y_pred, zero_division=0)
+        recall = recall_score(y_true, y_pred, zero_division=0)
+        f1 = f1_score(y_true, y_pred, zero_division=0)
+        f05 = (1.25 * precision * recall) / (0.25 * precision + recall + 1e-8) if (precision + recall) > 0 else 0.0
+        accuracy_bin = sum(int(p == r) for p, r in zip(y_pred, y_true)) / len(y_true)
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
+        false_positive_rate = fp / (fp + tn + 1e-12)
+
+    # CER / WER / SER calcolati su tutto il corpus
+    cer = jiwer.cer(all_references, all_hypotheses)
+    wer = jiwer.wer(all_references, all_hypotheses)
+    ser = sum(int(h != r) for h, r in zip(all_hypotheses, all_references)) / len(
+        all_references) if all_references else 0.0
+
+    # GLEU medio
     gleu = sum(gleu_scores) / len(gleu_scores) if gleu_scores else 0.0
 
    # Check these metrics non mi convincono

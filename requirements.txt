@@ -1,17 +1,3 @@
-torch
-sacremoses
-tensorboard
-torchviz
-nltk
-torchinfo
-chardet
-tensorflow
-sacrebleu
-rouge_score
-pandas
-pynvml
-scikit-learn
-editdistance
-jiwer
-transformers
-tokenizers
+version https://git-lfs.github.com/spec/v1
+oid sha256:aa757f9edaaa91e51a6ad8a10e6582cd69d725eaea6d85bf577273b967d72e9c
+size 164
