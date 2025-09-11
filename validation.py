@@ -150,7 +150,8 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
                 if pred_change and not ref_change:
                     total_fp += 1
 
-
+            print("Reference Example: ", ref_sentence)
+            print("Prediction Example: ", sentence)
             all_hypotheses.extend(pred_sentences)
             all_references.extend(ref_sentences)
 
