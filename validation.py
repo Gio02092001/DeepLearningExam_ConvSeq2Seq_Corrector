@@ -232,6 +232,7 @@ def beamSearch(model, source, progress_bar, beam_width, builder, max_output_leng
     device = source.device
     sequences = torch.full((batch_size, beam_width, 1), builder.targetSOS, dtype=torch.long, device=device)
     scores = torch.zeros((batch_size, beam_width), dtype=torch.float, device=device)
+    finished = [[] for _ in range(batch_size)]
 
     for _ in range(max_output_length):
         num_candidates = sequences.size(1)
@@ -250,22 +251,46 @@ def beamSearch(model, source, progress_bar, beam_width, builder, max_output_leng
         # Ricostruzione sequenze
         new_seqs = []
         for i in range(batch_size):
-            new_seqs.append([
-                sequences[i, beam_idx[i,b]].tolist() + [token_idx[i,b].item()]
-                for b in range(beam_width)
-            ])
+            seqs_i = []
+            for b in range(beam_width):
+                prev_seq = sequences[i, beam_idx[i, b]].tolist()
+                new_token = token_idx[i, b].item()
+                new_seq = prev_seq + [new_token]
+
+                if new_token == builder.targetEOS:
+                    finished[i].append((top_scores[i, b].item() / len(new_seq), new_seq))
+                else:
+                    seqs_i.append(new_seq)
+
+            # se tutte le ipotesi hanno chiuso, metto dummy per non rompere
+            if len(seqs_i) == 0:
+                seqs_i.append([builder.targetSOS])
+
+            new_seqs.append(seqs_i)
+
         sequences = torch.tensor(new_seqs, device=device)
         scores = top_scores
 
         # stop se tutti i beam hanno generato EOS// QUESTO È STATO AGGIUNTO DOPO SE POI NON FUNZIONA PIÙ CANCELLA attento
 
-        if all(all(tok == builder.targetEOS for tok in seq) for seqs in sequences for seq in seqs):
-            break
 
     # Selezione migliore ipotesi normalizzata per lunghezza
-    lengths = sequences.size(-1)
-    norm_scores = scores / lengths
-    best_idx = norm_scores.argmax(dim=1)
-    final = [ sequences[i, best_idx[i]].tolist() for i in range(batch_size) ]
+    final = []
+    for i in range(batch_size):
+        if len(finished[i]) > 0:
+            # prendi la migliore ipotesi terminata
+            best = max(finished[i], key=lambda x: x[0])[1]
+        else:
+            # fallback: nessuna EOS -> prendo il migliore rimasto
+            best_idx = scores[i].argmax().item()
+            best = sequences[i, best_idx].tolist()
+
+        # trim finale: togli SOS, tronca a EOS, togli PAD
+        if len(best) > 0 and best[0] == builder.targetSOS:
+            best = best[1:]
+        if builder.targetEOS in best:
+            best = best[:best.index(builder.targetEOS)]
+        best = [t for t in best if t != builder.targetPAD]
+        final.append(best)
 
     return final, None, None
