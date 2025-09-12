@@ -8,10 +8,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from nltk.translate.gleu_score import sentence_gleu
 import editdistance
 from sklearn.metrics import confusion_matrix
-
-
-
-
+from sklearn.metrics import precision_recall_fscore_support
 
 def validation(model, validation_loader, index_to_target_word, index_to_word, builder, beam_width=5,  device=None):
     """
@@ -142,14 +139,7 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
                 total_sentence_errors += int(words != ref_words)
                 total_sentences += 1
 
-                # ✅ Precision/Recall binario
-                pred_change = int(words != inp_words)
-                ref_change = int(ref_words != inp_words)
-                all_preds_bin.append(pred_change)
-                all_targets_bin.append(ref_change)
 
-                if pred_change and not ref_change:
-                    total_fp += 1
 
 
             all_hypotheses.extend(pred_sentences)
@@ -179,21 +169,26 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
     # Perplexity più robusta
     ppl = math.exp(total_loss / total_ppl_tokens)
 
+    # --- Precision/Recall/F1/F0.5 a livello token ---
+    y_true_tokens = []
+    y_pred_tokens = []
 
+    for ref, hyp in zip(all_references, all_hypotheses):
+        ref_tokens = ref.split()
+        hyp_tokens = hyp.split()
+        min_len = min(len(ref_tokens), len(hyp_tokens))
+        # confronto solo fino alla lunghezza minima (per allineare bene)
+        y_true_tokens.extend(ref_tokens[:min_len])
+        y_pred_tokens.extend(hyp_tokens[:min_len])
 
-
-    y_true, y_pred = all_targets_bin, all_preds_bin
-
-    if len(y_true) == 0:
-        precision = recall = f1 = f05 = accuracy_bin = false_positive_rate = 0.0
+    if len(y_true_tokens) > 0:
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            y_true_tokens, y_pred_tokens, average="micro", zero_division=0
+        )
+        f05 = (1.25 * precision * recall) / (0.25 * precision + recall + 1e-8)
     else:
-        precision = precision_score(y_true, y_pred, zero_division=0)
-        recall = recall_score(y_true, y_pred, zero_division=0)
-        f1 = f1_score(y_true, y_pred, zero_division=0)
-        f05 = (1.25 * precision * recall) / (0.25 * precision + recall + 1e-8) if (precision + recall) > 0 else 0.0
-        accuracy_bin = sum(int(p == r) for p, r in zip(y_pred, y_true)) / len(y_true)
-        tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
-        false_positive_rate = fp / (fp + tn + 1e-12)
+        precision = recall = f1 = f05 = 0.0
+
 
     # CER / WER / SER calcolati su tutto il corpus
     cer = jiwer.cer(all_references, all_hypotheses)
@@ -219,8 +214,6 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
         'recall': recall,
         'f1': f1,
         'f0.5': f05,
-        'binary_accuracy': accuracy_bin,
-        'false_positive_rate': false_positive_rate,
         'cer': cer,
         'wer': wer,
         'ser': ser,

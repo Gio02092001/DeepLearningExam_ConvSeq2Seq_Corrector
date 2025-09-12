@@ -287,8 +287,6 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             f"Recall: {valid_metrics['recall']:.2%}, "
             f"F₀.₅: {valid_metrics['f0.5']:.2%}, "
             f"F₁: {valid_metrics['f1']:.2%}, "
-            f"BinAcc: {valid_metrics['binary_accuracy']:.2%}, "
-            f"FPR: {valid_metrics['false_positive_rate']:.2%}, "
             f"CER: {valid_metrics['cer']:.2%}, "
             f"WER: {valid_metrics['wer']:.2%}, "
             f"SER: {valid_metrics['ser']:.2%}, "
