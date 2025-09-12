@@ -249,7 +249,7 @@ def beamSearch(model, source, progress_bar, beam_width, builder, max_output_leng
         beam_idx = top_indices // log_probs.size(-1)
         token_idx = top_indices % log_probs.size(-1)
 
-        # Ricostruzione sequenze
+        # Ricostruzione sequenze test
         new_seqs = []
         for i in range(batch_size):
             new_seqs.append([
