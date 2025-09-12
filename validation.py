@@ -273,9 +273,8 @@ def beamSearch(model, source, progress_bar, beam_width, builder, max_output_leng
 
         # tronca a EOS
         if builder.targetEOS in seq:
-            print(seq)
             seq = seq[:seq.index(builder.targetEOS)]
-            print(seq)
+
 
         final.append(seq)
 
