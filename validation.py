@@ -88,12 +88,12 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
                              if index_to_target_word[i] not in ['<pad>', '<sos>', '<eos>']]
                     sentence = " ".join(words)
 
-                    # --- Riferimento ---
+                    # --- Riferimento Target---
                     ref_words = [index_to_target_word[i] for i in ref_ids
                                  if index_to_target_word[i] not in ['<pad>', '<sos>', '<eos>']]
                     ref_sentence = " ".join(ref_words)
 
-                    # --- Input ---
+                    # --- Input  ´Source---
                     inp_words = [index_to_word[i] for i in inp_ids
                                  if index_to_word[i] not in ['<pad>', '<sos>', '<eos>']]
                     inp_sentence = " ".join(inp_words)
