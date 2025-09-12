@@ -266,6 +266,15 @@ def beamSearch(model, source, progress_bar, beam_width, builder, max_output_leng
     lengths = sequences.size(-1)
     norm_scores = scores / lengths
     best_idx = norm_scores.argmax(dim=1)
-    final = [ sequences[i, best_idx[i]].tolist() for i in range(batch_size) ]
+    final = []
+
+    for i in range(batch_size):
+        seq = sequences[i, best_idx[i]].tolist()
+
+        # tronca a EOS
+        if builder.targetEOS in seq:
+            seq = seq[:seq.index(builder.targetEOS)]
+
+        final.append(seq)
 
     return final, None, None
