@@ -261,8 +261,6 @@ def beamSearch(model, source, progress_bar, beam_width, builder, max_output_leng
 
         # stop se tutti i beam hanno generato EOS// QUESTO È STATO AGGIUNTO DOPO SE POI NON FUNZIONA PIÙ CANCELLA attento
 
-        if all(all(tok == builder.targetEOS for tok in seq) for seqs in sequences for seq in seqs):
-            break
 
     # Selezione migliore ipotesi normalizzata per lunghezza
     lengths = sequences.size(-1)
