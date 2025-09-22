@@ -27,7 +27,7 @@ def run_trial(trial):
     """Lancia main.py e legge la metrica CHR-F dall’output."""
     update_config(trial)
 
-    cmd = ["python", "main.py"]
+    cmd = [sys.executable, "main.py"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
     best_chrf = 0.0
