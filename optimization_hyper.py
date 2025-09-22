@@ -13,12 +13,12 @@ def update_config(trial):
     config["learning_rate"] = trial.suggest_loguniform("learning_rate", 0.2, 0.3)
     config["beamWidth"] = trial.suggest_int("beamWidth", 3, 7)
     config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.05, 0.5)
-    x = trial.suggest_int("hidden_dim", 128, 1024)
+    x = trial.suggest_int("hidden_dim", 2, 4)
     config["hidden_dim"] = x
     config["embedding_dim"] = x
-    config["encoderLayer"] = trial.suggest_int("encoderLayer", 5, 15)
-    config["decoderLayer"] = trial.suggest_int("decoderLayer", 5, 15)
-    config["batch_size"] = trial.suggest_int("batch_size", 32, 128)
+    config["encoderLayer"] = trial.suggest_int("encoderLayer", 2, 4)
+    config["decoderLayer"] = trial.suggest_int("decoderLayer", 2, 4)
+    config["batchSize"] = trial.suggest_int("batchSize", 32, 128)
 
     with open(CONFIG_PATH, "w") as f:
         yaml.safe_dump(config, f)
@@ -33,6 +33,15 @@ def run_trial(trial):
     best_chrf = 0.0
     for line in proc.stdout:
         print(line, end="")
+        # 🔹 Detect finished epoch
+        match = re.search(r"Epoch\s+(\d+)\s+finished", line)
+        if match:
+            current_epoch = int(match.group(1))
+            if current_epoch >= 3:
+                print(f"🔴 Epoch {current_epoch} finished → stopping trial early")
+                proc.terminate()
+                break
+
         if "Validation — BLEU:" in line:
             match = re.search(r"CHR-F:\s*([0-9.]+)", line)
             if match:
