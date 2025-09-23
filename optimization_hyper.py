@@ -56,7 +56,7 @@ def run_trial(trial):
 
 if __name__ == "__main__":
     study = optuna.create_study(direction="maximize")
-    study.optimize(run_trial, n_trials=20)
+    study.optimize(run_trial, n_trials=4)
 
     print("Miglior trial:")
     print(study.best_trial.params)
