@@ -20,7 +20,7 @@ class ConvModel_New(nn.Module):
 
         self.linearEncoderInput = LinearTransformation_New(False, embedding_dim, hidden_dim, p_dropout)
         self.encoderBlocks = nn.Sequential(
-            *[(Encoder_New(embedding_dim, hidden_dim, p_dropout, kernel_width)) for _ in range(encoderLayer)]
+            *[(Encoder_New( hidden_dim, p_dropout, kernel_width)) for _ in range(encoderLayer)]
         )
         self.linearEncoderOutput = LinearTransformation_New(True, hidden_dim, embedding_dim, p_dropout)
 
