@@ -319,19 +319,20 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 
             else:
                 no_improve += 1
-                torch.save({
-                    'epoch': epochNumber,
-                    'model_state': model.state_dict(),
-                    'optimizer_state': optimizer.state_dict(),
-                    'best_metric_ChrF': best_metric,
-                    'startFineTuning': startFineTuning,
-                    'no_improve': no_improve,
-                    'learning_rate': optimizer.param_groups[0]['lr']
-                }, f"models/{timestamp}/best_model.pt")
-                print(f" Saved current model at epoch {epochNumber} (metric={current_metric:.2f})")
+
 
                 print(f"Nessun miglioramento per {no_improve}/{patience} epoche")
 
+            torch.save({
+                'epoch': epochNumber,
+                'model_state': model.state_dict(),
+                'optimizer_state': optimizer.state_dict(),
+                'best_metric_ChrF': best_metric,
+                'startFineTuning': startFineTuning,
+                'no_improve': no_improve,
+                'learning_rate': optimizer.param_groups[0]['lr']
+            }, f"models/{timestamp}/last_model.pt")
+            print(f" Saved current model at epoch {epochNumber} (metric={current_metric:.2f})")
         # solo quando no_improve >= PATIENCE, chiamo scheduler.step()
         if no_improve > patience:
             # scheduler.step() ridurrà lr di 10× (fino al tuo min_lr 1e-4)

@@ -102,7 +102,7 @@ def main():
     if hasattr(args, 'pretrained') and args.pretrained is not None:
         # args.file esiste e non è None
         pretrained = args.pretrained
-        ckpt = torch.load(f"models/{pretrained}/best_model.pt", map_location=device)
+        ckpt = torch.load(f"models/{pretrained}/last_model.pt", map_location=device)
         config = load_parameters(f"models/{pretrained}/config.yaml")
         timestamp = pretrained
         learning_rate = ckpt['learning_rate']
