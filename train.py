@@ -64,12 +64,14 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     if model.device == torch.device("cuda"):
         # On GPU: use more workers, but not more than available CPUs
         workers = min(8, cpu_count)
-        log_dir = "runs" #"/content/drive/MyDrive/runs/"+ timestamp
-        writer = SummaryWriter(log_dir=log_dir)
+
     else:
         # On CPU: use fewer workers
         workers = min(8, cpu_count)
-        writer = SummaryWriter()
+
+    log_dir = os.path.join("runs", str(timestamp))
+    os.makedirs(log_dir, exist_ok=True)
+    writer = SummaryWriter(log_dir=log_dir)
 
     # DataLoader
     train_loader = DataLoader(
@@ -104,6 +106,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         epochNumber=ckpt['epoch']+1
         startFineTuning =ckpt['startFineTuning']
         best_metric = ckpt['best_metric_ChrF']
+        no_improve=ckpt['no_improve']
 
 
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:
@@ -308,12 +311,23 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'model_state': model.state_dict(),
                     'optimizer_state': optimizer.state_dict(),
                     'best_metric_ChrF': best_metric,
-                    'startFineTuning': startFineTuning
+                    'startFineTuning': startFineTuning,
+                    'noImprove': no_improve
                 }, f"models/{timestamp}/best_model.pt")
                 print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
                 
             else:
                 no_improve += 1
+                torch.save({
+                    'epoch': epochNumber,
+                    'model_state': model.state_dict(),
+                    'optimizer_state': optimizer.state_dict(),
+                    'best_metric_ChrF': best_metric,
+                    'startFineTuning': startFineTuning,
+                    'no_improve': no_improve
+                }, f"models/{timestamp}/best_model.pt")
+                print(f" Saved current model at epoch {epochNumber} (metric={current_metric:.2f})")
+
                 print(f"Nessun miglioramento per {no_improve}/{patience} epoche")
 
         # solo quando no_improve >= PATIENCE, chiamo scheduler.step()

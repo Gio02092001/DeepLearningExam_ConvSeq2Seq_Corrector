@@ -104,10 +104,10 @@ def main():
         pretrained = args.pretrained
         ckpt = torch.load(f"models/{pretrained}/best_model.pt", map_location=device)
         config = load_parameters(f"models/{pretrained}/config.yaml")
+        timestamp = pretrained
         # fai qualcosa con file_path
     else:
         config = load_parameters()
-    if ckpt is None:
         timestamp = str(int(time.time()))
         os.mkdir(f"models/{timestamp}")
         # time.sleep(0)
@@ -115,8 +115,7 @@ def main():
         dst_path = f"models/{timestamp}"
         shutil.copy2(src_path, dst_path)
 
-    else:
-        timestamp = pretrained
+
 
     # Scommenta questi per creare gli ultimi dizionari grossi
     builder = BuildDictionary_Map(config["dataSet_Sentence"], config["dataSet_repetition"],
