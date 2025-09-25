@@ -105,6 +105,7 @@ def main():
         ckpt = torch.load(f"models/{pretrained}/best_model.pt", map_location=device)
         config = load_parameters(f"models/{pretrained}/config.yaml")
         timestamp = pretrained
+        learning_rate = ckpt['learning_rate']
         # fai qualcosa con file_path
     else:
         config = load_parameters()
@@ -114,6 +115,7 @@ def main():
         src_path = "Config/config.yaml"
         dst_path = f"models/{timestamp}"
         shutil.copy2(src_path, dst_path)
+        learning_rate=config["learning_rate"]
 
 
 
@@ -140,7 +142,7 @@ def main():
     model.to(device)
 
     optimizer = torch.optim.SGD(
-        model.parameters(), lr=config["learning_rate"], momentum=config["nestorovsMomentum"], nesterov=True
+        model.parameters(), lr=learning_rate, momentum=config["nestorovsMomentum"], nesterov=True
     )
 
     scheduler = LambdaLR(optimizer, lr_lambda=lambda step: 0.1 ** step)

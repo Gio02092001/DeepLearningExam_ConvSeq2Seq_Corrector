@@ -312,7 +312,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'optimizer_state': optimizer.state_dict(),
                     'best_metric_ChrF': best_metric,
                     'startFineTuning': startFineTuning,
-                    'noImprove': no_improve
+                    'noImprove': no_improve,
+                    'learning_rate': optimizer.param_groups[0]['lr']
                 }, f"models/{timestamp}/best_model.pt")
                 print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
                 
@@ -324,7 +325,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'optimizer_state': optimizer.state_dict(),
                     'best_metric_ChrF': best_metric,
                     'startFineTuning': startFineTuning,
-                    'no_improve': no_improve
+                    'no_improve': no_improve,
+                    'learning_rate': optimizer.param_groups[0]['lr']
                 }, f"models/{timestamp}/best_model.pt")
                 print(f" Saved current model at epoch {epochNumber} (metric={current_metric:.2f})")
 
