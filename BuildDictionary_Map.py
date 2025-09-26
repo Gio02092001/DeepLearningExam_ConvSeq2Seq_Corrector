@@ -236,7 +236,6 @@ class BuildDictionary_Map:
             article = f.read()
         #encoding_info = chardet.detect(article)
         #tqdm.write(encoding_info)
-        tqdm.write("Tokenizing sentences...")
         if self.bpe==0:
             tokenized_file = "data/tokenized_sentences.pkl"
             if os.path.exists(tokenized_file):
