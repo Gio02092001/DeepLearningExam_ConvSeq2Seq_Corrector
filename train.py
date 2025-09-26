@@ -37,7 +37,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         tokenizer = MosesTokenizer('en')
     else:
         tokenizer=builder.bpe_tokenizer
-    global_step = 0
+
 
     # Create dataset
     dataset = TranslationDataset(train_data, word_dict,target_word_dict, builder, tokenizer)
@@ -101,12 +101,14 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     if ckpt is None:
         epochNumber=1
         startFineTuning = False
+        global_step = 0
 
     else:
         epochNumber=ckpt['epoch']+1
         startFineTuning =ckpt['startFineTuning']
         best_metric = ckpt['best_metric_ChrF']
         no_improve=ckpt['no_improve']
+        global_step = ckpt['global_step']
 
 
     while optimizer.param_groups[0]['lr'] > maximumlearningRateLimit:
@@ -313,7 +315,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     'best_metric_ChrF': best_metric,
                     'startFineTuning': startFineTuning,
                     'noImprove': no_improve,
-                    'learning_rate': optimizer.param_groups[0]['lr']
+                    'learning_rate': optimizer.param_groups[0]['lr'],
+                    'global_step': global_step
                 }, f"models/{timestamp}/best_model.pt")
                 print(f"✔️  Saved best model at epoch {epochNumber} (metric={current_metric:.2f})")
                 
@@ -330,7 +333,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 'best_metric_ChrF': best_metric,
                 'startFineTuning': startFineTuning,
                 'no_improve': no_improve,
-                'learning_rate': optimizer.param_groups[0]['lr']
+                'learning_rate': optimizer.param_groups[0]['lr'],
+                'global_step': global_step
             }, f"models/{timestamp}/last_model.pt")
             print(f" Saved current model at epoch {epochNumber} (metric={current_metric:.2f})")
         # solo quando no_improve >= PATIENCE, chiamo scheduler.step()
