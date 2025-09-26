@@ -20,13 +20,34 @@ class TranslationDataset(Dataset):
         for idx, (source, target) in enumerate(tqdm(data_dict.items(), desc="Tokenizing data")):
             ''' quello che ho fatto nel train dovrei farlo qui perché devo farlo nel dataset a quel punto però posso togliere il 5. step perché tanto ce lo metto io qui già tutto.'''
             if builder.bpe==0:
-                # Tokenize
+                """# Tokenize
                 source_tokens = self.tokenize_fn.tokenize(source)
                 target_tokens = self.tokenize_fn.tokenize(target)
 
                 # Convert to indices
                 source_indices = [word_dict.get(token) for token in source_tokens] + [builder.sourceEOS]
                 target_indices = [builder.targetSOS] + [target_word_dict.get(token) for token in target_tokens]
+                """
+                # Tokenize
+                source_tokens = self.tokenize_fn.tokenize(source)
+                target_tokens = self.tokenize_fn.tokenize(target)
+
+                # Convert to indices (with debug print)
+                source_indices = []
+                for token in source_tokens:
+                    idx = word_dict.get(token)
+                    if idx is None:
+                        tqdm.write(f"[DEBUG] Missing in word_dict: '{token}' | source: {source}")
+                    source_indices.append(idx)
+                source_indices.append(builder.sourceEOS)
+
+                target_indices = [builder.targetSOS]
+                for token in target_tokens:
+                    idx = target_word_dict.get(token)
+                    if idx is None:
+                        tqdm.write(f"[DEBUG] Missing in target_word_dict: '{token}' | target: {target}")
+                    target_indices.append(idx)
+
                 self.data.append((source_indices, target_indices))
             else:
                 source_enc = builder.bpe_tokenizer.encode(source)
