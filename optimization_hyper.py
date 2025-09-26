@@ -23,7 +23,7 @@ def update_config(trial):
     config["decoderLayer"] = trial.suggest_int("decoderLayer", 5, 15)
     config["batchSize"] = trial.suggest_int("batchSize", 32, 128)
     config['dataSet_probability']= trial.suggest_uniform("dataSet_probability", 0.05, 0.18)
-    config['dataSet_repetition'] = trial.suggest_int("dataSet_probability", 2,6 )
+    config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 2,6 )
 
 
     with open(CONFIG_PATH, "w") as f:
