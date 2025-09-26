@@ -7,6 +7,7 @@ import chardet
 import nltk
 import pandas as pd
 from nltk import word_tokenize, RegexpTokenizer, punkt
+from sacremoses import MosesTokenizer
 from tensorflow import timestamp
 from tokenizers.processors import TemplateProcessing
 from tqdm import tqdm
@@ -19,7 +20,7 @@ from tokenizers.trainers import BpeTrainer
 #nltk.download('punkt')
 
 class BuildDictionary_Map:
-    tokenizer = RegexpTokenizer(r'[^.!?]+[.!?]')
+    tokenizer = MosesTokenizer('en')
     """ Manca la generazione di 0.1x10x500.000 e 0.1x10x3.500.000"""
     corruption_prob = 0.1
     times = 5
