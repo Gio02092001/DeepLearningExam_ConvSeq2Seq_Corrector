@@ -191,18 +191,13 @@ class BuildDictionary_Map:
                             corrupted_word.append(random.choice(keyboard_neighbors[char]))
                     # numeri
                     elif char.isdigit():
-                        if corruption_type == 'add':
-                            corrupted_word.append(char)
-                            corrupted_word.append(str(random.randint(0, 9)))
-                        elif corruption_type == 'delete':
-                            continue
-                        elif corruption_type == 'change':
-                            corrupted_word.append(str(random.randint(0, 9)))
+                        corrupted_word.append(char)
                             # punteggiatura
                     else:
                         if corruption_type == 'delete':
                             continue
-                corrupted_word.append(char)
+                else:
+                    corrupted_word.append(char)
 
             if random.random() < corruption_prob:
                 corrupted_word.append(random.choice(string.ascii_letters))
