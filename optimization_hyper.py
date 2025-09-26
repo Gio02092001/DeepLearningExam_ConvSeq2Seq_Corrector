@@ -1,3 +1,4 @@
+import json
 import sys
 
 import optuna
@@ -82,3 +83,22 @@ if __name__ == "__main__":
     for i, trial in enumerate(top_trials, 1):
         print(f"Rank {i}: CHR-F={trial.value}")
         print(trial.params)
+
+    # Prepare data
+    results = {
+        "best_trial": {
+            "params": study.best_trial.params,
+            "CHR-F": study.best_value
+        },
+        "top_3_trials": [
+            {"rank": i + 1, "CHR-F": t.value, "params": t.params}
+            for i, t in enumerate(top_trials)
+        ]
+    }
+
+    # Save to file
+    with open("Results.json", "w") as f:
+        json.dump(results, f, indent=4)
+
+    print("Results saved to Results.json")
+
