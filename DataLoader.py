@@ -1,4 +1,5 @@
 import random
+import string
 
 import torch
 from torch.utils.data import Dataset
@@ -29,8 +30,8 @@ class TranslationDataset(Dataset):
                 target_indices = [builder.targetSOS] + [target_word_dict.get(token) for token in target_tokens]
                 """
                 # Tokenize
-                source_tokens = self.tokenize_fn.tokenize(source)
-                target_tokens = self.tokenize_fn.tokenize(target)
+                source_tokens = [t for t in self.tokenize_fn.tokenize(source) if t not in string.punctuation]
+                target_tokens = [t for t in self.tokenize_fn.tokenize(target) if t not in string.punctuation]
 
                 # Convert to indices (with debug print)
                 source_indices = []

@@ -1,3 +1,4 @@
+import os
 import pickle
 import string
 import random
@@ -237,7 +238,24 @@ class BuildDictionary_Map:
         #tqdm.write(encoding_info)
         tqdm.write("Tokenizing sentences...")
         if self.bpe==0:
-            sentences = self.tokenizer.tokenize(article)
+            tokenized_file = "data/tokenized_sentences.pkl"
+            if os.path.exists(tokenized_file):
+                tqdm.write("Loading pre-tokenized sentences...")
+                with open(tokenized_file, "rb") as f:
+                    tokenized_sentences = pickle.load(f)
+            else:
+                tqdm.write("Tokenizing sentences...")
+                sentences = self.tokenizer.tokenize(article)
+                tokenized_sentences = {}
+                for sentence in tqdm(sentences[:self.sentenceNumber], desc="Tokenizing sentences"):
+                    # Rimuovi la punteggiatura
+                    words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
+                    tokenized_sentences[sentence] = words
+
+                # Salva tokenized file per uso futuro
+                with open(tokenized_file, "wb") as f:
+                    pickle.dump(tokenized_sentences, f)
+                tqdm.write(f"Tokenized sentences saved to {tokenized_file}")
 
             all_words = []
             all_target_words=[]
