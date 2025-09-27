@@ -138,6 +138,7 @@ def create_equal_length_batches(dataset, fixedNumberOfInputElements, batch_size=
     for idx in tqdm(range(len(dataset)), desc="Creating length-based groups"):
 
         source_len = len(dataset.data[idx][0])
+        print(source_len)
         if source_len > fixedNumberOfInputElements:
             continue
         if source_len < 4:
