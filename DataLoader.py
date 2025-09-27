@@ -84,9 +84,12 @@ class TranslationDataset(Dataset):
         source_seqs, target_seqs = zip(*batch)
         if self.builder.bpe==0:
             # Convert to tensors
-            print(target_seqs)
             source_tensor = torch.LongTensor(source_seqs)
-            target_tensor = torch.LongTensor(target_seqs)
+            try:
+                target_tensor = torch.LongTensor(target_seqs)
+            except:
+                print("Target:", target_seqs)
+                print("Source:", source_seqs)
 
         else:
              # Caso BPE → serve padding
