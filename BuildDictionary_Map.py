@@ -258,6 +258,7 @@ class BuildDictionary_Map:
                 all_words.extend(words, "'")
                 all_target_words.extend(words, "'")
 
+
                 for corrupted_sentence in self.corrupt_sentence(words):
                     corrupted_words = [word for word in word_tokenize(corrupted_sentence) if word not in string.punctuation]
                     all_words.extend(corrupted_words)
