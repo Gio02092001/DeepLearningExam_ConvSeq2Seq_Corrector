@@ -262,7 +262,7 @@ class BuildDictionary_Map:
 
             # iterate over the first N sentences
             for i, (original_sentence, words) in enumerate(
-                    tqdm(tokenized_sentences.items(), desc="Processing sentences")):
+                    tqdm(sentences.items(), desc="Processing sentences")):
                 if i >= self.sentenceNumber:
                     break
                 finalSentence = ' '.join(words)
