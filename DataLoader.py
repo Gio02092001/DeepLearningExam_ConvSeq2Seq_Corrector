@@ -84,7 +84,6 @@ class TranslationDataset(Dataset):
         source_seqs, target_seqs = zip(*batch)
         if self.builder.bpe==0:
             # Convert to tensors
-            print(source_seqs)
             print(target_seqs)
             source_tensor = torch.LongTensor(source_seqs)
             target_tensor = torch.LongTensor(target_seqs)
