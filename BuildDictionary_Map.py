@@ -238,6 +238,7 @@ class BuildDictionary_Map:
         #tqdm.write(encoding_info)
         if self.bpe==0:
             tokenized_file = "data/tokenized_sentences.pkl"
+
             if os.path.exists(tokenized_file):
                 tqdm.write("Loading pre-tokenized sentences...")
                 with open(tokenized_file, "rb") as f:
@@ -248,14 +249,13 @@ class BuildDictionary_Map:
                 tokenized_sentences = []
 
                 for sentence in tqdm(sentences, desc="Tokenizing sentences"):
-                    # Remove punctuation
-                    words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
-                    if words:  # skip empty sentences
+                    words = [w for w in word_tokenize(sentence) if w not in string.punctuation]
+                    if words:  # scarta frasi vuote
                         tokenized_sentences.append(words)
 
-                # Save tokenized sentences for future runs
                 with open(tokenized_file, "wb") as f:
                     pickle.dump(tokenized_sentences, f)
+
                 tqdm.write(f"Tokenized sentences saved to {tokenized_file}")
 
             all_words = []
