@@ -55,8 +55,6 @@ class TranslationDataset(Dataset):
                         source_indices.append(idx)
                 source_indices.append(builder.sourceEOS)
 
-
-
                 self.data.append((source_indices, target_indices))
             else:
                 source_enc = builder.bpe_tokenizer.encode(source)

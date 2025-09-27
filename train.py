@@ -8,6 +8,7 @@ import shutil
 import os
 
 import torch
+from nltk import TweetTokenizer
 from sacremoses import MosesTokenizer
 from tensorflow import timestamp
 from torch.utils.data import DataLoader
@@ -34,7 +35,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     loss_fn = torch.nn.CrossEntropyLoss(reduction="mean")  # Standard loss, no need to ignore padding
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     if builder.bpe==0:
-        tokenizer = MosesTokenizer('en')
+        tokenizer = TweetTokenizer(preserve_case=True)
     else:
         tokenizer=builder.bpe_tokenizer
 
