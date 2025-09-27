@@ -9,12 +9,14 @@ import nltk
 import pandas as pd
 from nltk import word_tokenize, RegexpTokenizer, punkt
 from sacremoses import MosesTokenizer
+from sacremoses.sent_tokenize import MosesSentTokenizer
 from tensorflow import timestamp
 from tokenizers.processors import TemplateProcessing
 from tqdm import tqdm
 from tokenizers import Tokenizer, models, pre_tokenizers, trainers, processors, normalizers
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.trainers import BpeTrainer
+from mosestokenizer import *
 
 
 
@@ -241,7 +243,9 @@ class BuildDictionary_Map:
                 with open("data/WikiArticlesCorrect", "r", encoding="utf-16") as f:
                     article = f.read()
                 tqdm.write("Tokenizing sentences...")
-                sentences = self.tokenizer.tokenize(article)
+                with MosesSentenceSplitter('en') as splitsents:
+                    sentences = splitsents(article)
+
                 with open("data/tokenized_sentences", "wb") as f:
                     pickle.dump(sentences, f)
 
@@ -289,8 +293,10 @@ class BuildDictionary_Map:
             tqdm.write("Preparing BPE tokenizer...")
 
             # 🔹 1. Splitting in sentences (. ! ?)
-
-            sentences = re.split(r'[.!?]', article)
+            with open("data/WikiArticlesCorrect", "r", encoding="utf-16") as f:
+                article = f.read()
+            with MosesSentenceSplitter('en') as splitsents:
+                sentences = splitsents(article)
 
             all_texts = []
             for sentence in tqdm(sentences[:self.sentenceNumber], desc="Collecting texts for BPE"):
