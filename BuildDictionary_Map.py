@@ -260,9 +260,11 @@ class BuildDictionary_Map:
             all_target_words=[]
             all_sentences = {}
 
-            for sentence in tqdm(sentences[:self.sentenceNumber], desc="Processing sentences"):
-                #tqdm.write(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
-                words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
+            # iterate over the first N sentences
+            for i, (original_sentence, words) in enumerate(
+                    tqdm(tokenized_sentences.items(), desc="Processing sentences")):
+                if i >= self.sentenceNumber:
+                    break
                 finalSentence = ' '.join(words)
                 all_words.extend(words)
                 all_target_words.extend(words)
