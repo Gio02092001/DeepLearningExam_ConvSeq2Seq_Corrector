@@ -241,17 +241,19 @@ class BuildDictionary_Map:
             if os.path.exists(tokenized_file):
                 tqdm.write("Loading pre-tokenized sentences...")
                 with open(tokenized_file, "rb") as f:
-                    sentences = pickle.load(f)
+                    tokenized_sentences = pickle.load(f)
             else:
                 tqdm.write("Tokenizing sentences...")
                 sentences = self.tokenizer.tokenize(article)
-                tokenized_sentences = {}
-                for sentence in tqdm(sentences[:self.sentenceNumber], desc="Tokenizing sentences"):
-                    # Rimuovi la punteggiatura
-                    words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
-                    tokenized_sentences[sentence] = words
+                tokenized_sentences = []
 
-                # Salva tokenized file per uso futuro
+                for sentence in tqdm(sentences, desc="Tokenizing sentences"):
+                    # Remove punctuation
+                    words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
+                    if words:  # skip empty sentences
+                        tokenized_sentences.append(words)
+
+                # Save tokenized sentences for future runs
                 with open(tokenized_file, "wb") as f:
                     pickle.dump(tokenized_sentences, f)
                 tqdm.write(f"Tokenized sentences saved to {tokenized_file}")
@@ -262,7 +264,7 @@ class BuildDictionary_Map:
 
             # iterate over the first N sentences
             for i, (original_sentence, words) in enumerate(
-                    tqdm(sentences.items(), desc="Processing sentences")):
+                    tqdm(tokenized_sentences.items(), desc="Processing sentences")):
                 if i >= self.sentenceNumber:
                     break
                 finalSentence = ' '.join(words)
