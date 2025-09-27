@@ -241,8 +241,7 @@ class BuildDictionary_Map:
                 with open("data/WikiArticlesCorrect", "r", encoding="utf-16") as f:
                     article = f.read()
                 tqdm.write("Tokenizing sentences...")
-                with MosesSentenceSplitter('en') as splitsents:
-                    sentences = splitsents(article)
+                sentences = re.split(r'[.!?]', article)
 
                 with open("data/tokenized_sentences", "wb") as f:
                     pickle.dump(sentences, f)
@@ -293,8 +292,7 @@ class BuildDictionary_Map:
             # 🔹 1. Splitting in sentences (. ! ?)
             with open("data/WikiArticlesCorrect", "r", encoding="utf-16") as f:
                 article = f.read()
-            with MosesSentenceSplitter('en') as splitsents:
-                sentences = splitsents(article)
+            sentences = re.split(r'[.!?]', article)
 
             all_texts = []
             for sentence in tqdm(sentences[:self.sentenceNumber], desc="Collecting texts for BPE"):
