@@ -32,9 +32,20 @@ class TranslationDataset(Dataset):
                 # Tokenize
                 source_tokens = [t for t in self.tokenize_fn.tokenize(source) if t not in string.punctuation]
                 target_tokens = [t for t in self.tokenize_fn.tokenize(target) if t not in string.punctuation]
-
+                skip=True
+                target_indices = [builder.targetSOS]
+                for token in target_tokens:
+                    idx = target_word_dict.get(token)
+                    if idx is None:
+                        tqdm.write(f"[DEBUG] Missing in target_word_dict: '{token}' | target: {target}")
+                        skip_example = True
+                        break
+                    target_indices.append(idx)
                 # Convert to indices (with debug print)
+                if skip:
+                    continue
                 source_indices = []
+
                 for token in source_tokens:
                     idx = word_dict.get(token)
                     if idx is None:
@@ -44,12 +55,7 @@ class TranslationDataset(Dataset):
                         source_indices.append(idx)
                 source_indices.append(builder.sourceEOS)
 
-                target_indices = [builder.targetSOS]
-                for token in target_tokens:
-                    idx = target_word_dict.get(token)
-                    if idx is None:
-                        tqdm.write(f"[DEBUG] Missing in target_word_dict: '{token}' | target: {target}")
-                    target_indices.append(idx)
+
 
                 self.data.append((source_indices, target_indices))
             else:
