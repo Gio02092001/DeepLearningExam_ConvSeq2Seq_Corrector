@@ -21,7 +21,7 @@ class TranslationDataset(Dataset):
         for idx, (source, target) in enumerate(tqdm(data_dict.items(), desc="Tokenizing data")):
             ''' quello che ho fatto nel train dovrei farlo qui perché devo farlo nel dataset a quel punto però posso togliere il 5. step perché tanto ce lo metto io qui già tutto.'''
             if builder.bpe==0:
-                """# Tokenize
+                # Tokenize
                 source_tokens = self.tokenize_fn.tokenize(source)
                 target_tokens = self.tokenize_fn.tokenize(target)
 
@@ -54,7 +54,7 @@ class TranslationDataset(Dataset):
                     else:
                         source_indices.append(idx)
                 source_indices.append(builder.sourceEOS)
-
+                """
                 self.data.append((source_indices, target_indices))
             else:
                 source_enc = builder.bpe_tokenizer.encode(source)
@@ -85,11 +85,8 @@ class TranslationDataset(Dataset):
         if self.builder.bpe==0:
             # Convert to tensors
             source_tensor = torch.LongTensor(source_seqs)
-            try:
-                target_tensor = torch.LongTensor(target_seqs)
-            except:
-                print("Target:", target_seqs)
-                print("Source:", source_seqs)
+            target_tensor = torch.LongTensor(target_seqs)
+
 
         else:
              # Caso BPE → serve padding
