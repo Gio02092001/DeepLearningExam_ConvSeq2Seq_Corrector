@@ -3,7 +3,7 @@ import pickle
 import string
 import random
 import re
-
+from nltk.tokenize import TweetTokenizer
 import chardet
 import nltk
 import pandas as pd
@@ -21,7 +21,7 @@ from mosestokenizer import *
 #nltk.download('punkt')
 
 class BuildDictionary_Map:
-    tokenizer = MosesTokenizer('en')
+    tokenizer = TweetTokenizer(preserve_case=True)
     """ Manca la generazione di 0.1x10x500.000 e 0.1x10x3.500.000"""
     corruption_prob = 0.1
     times = 5
