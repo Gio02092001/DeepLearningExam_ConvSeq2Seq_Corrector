@@ -263,10 +263,7 @@ class BuildDictionary_Map:
             all_sentences = {}
 
             # iterate over the first N sentences
-            for i, (original_sentence, words) in enumerate(
-                    tqdm(tokenized_sentences.items(), desc="Processing sentences")):
-                if i >= self.sentenceNumber:
-                    break
+            for words in tqdm(tokenized_sentences[:self.sentenceNumber], desc="Processing sentences"):
                 finalSentence = ' '.join(words)
                 all_words.extend(words)
                 all_target_words.extend(words)
