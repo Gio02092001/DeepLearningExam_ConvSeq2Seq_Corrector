@@ -255,8 +255,8 @@ class BuildDictionary_Map:
                 #tqdm.write(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
                 words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
                 finalSentence = ' '.join(words)
-                all_words.extend(words)
-                all_target_words.extend(words)
+                all_words.extend(words, "'")
+                all_target_words.extend(words, "'")
 
                 for corrupted_sentence in self.corrupt_sentence(words):
                     corrupted_words = [word for word in word_tokenize(corrupted_sentence) if word not in string.punctuation]
