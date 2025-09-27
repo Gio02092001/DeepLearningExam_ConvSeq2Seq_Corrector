@@ -256,9 +256,9 @@ class BuildDictionary_Map:
                 words = [word for word in word_tokenize(sentence)]
                 finalSentence = ' '.join(words)
                 all_words.extend(words)
-                all_words.extend("'")
+                all_words.extend("&apos;")
                 all_target_words.extend(words)
-                all_target_words.extend("'")
+                all_target_words.extend("&apos;")
 
 
                 for corrupted_sentence in self.corrupt_sentence(words):
