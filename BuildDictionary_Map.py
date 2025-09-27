@@ -254,7 +254,7 @@ class BuildDictionary_Map:
             for sentence in tqdm(sentences[:self.sentenceNumber], desc="Processing sentences"):
                 #tqdm.write(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
                 words = [word for word in word_tokenize(sentence)]
-                finalSentence = ' '.join(words)
+
                 all_words.extend(words)
                 all_words.extend("&apos;")
                 all_target_words.extend(words)
@@ -264,7 +264,7 @@ class BuildDictionary_Map:
                 for corrupted_sentence in self.corrupt_sentence(words):
                     corrupted_words = [word for word in word_tokenize(corrupted_sentence)]
                     all_words.extend(corrupted_words)
-                    all_sentences.setdefault(corrupted_sentence, finalSentence)
+                    all_sentences.setdefault(corrupted_sentence, sentence)
 
 
             index_to_word = {idx: word for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
