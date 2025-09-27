@@ -35,7 +35,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     loss_fn = torch.nn.CrossEntropyLoss(reduction="mean")  # Standard loss, no need to ignore padding
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     if builder.bpe==0:
-        tokenizer = TweetTokenizer(preserve_case=True)
+        tokenizer = builder.tokenizer
     else:
         tokenizer=builder.bpe_tokenizer
 
