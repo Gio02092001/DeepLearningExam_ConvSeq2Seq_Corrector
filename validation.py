@@ -9,6 +9,9 @@ from nltk.translate.gleu_score import sentence_gleu
 import editdistance
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_recall_fscore_support
+import warnings
+
+
 
 def validation(model, validation_loader, index_to_target_word, index_to_word, builder, beam_width=5,  device=None):
     """
@@ -24,6 +27,7 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
     Returns:
         Dictionary con BLEU, CHRF, ROUGE-1/2/L e accuracy token-level.
     """
+    warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
     tqdm.write("--------------------Validation start-----------------------")
     model.eval()
     if device is None:

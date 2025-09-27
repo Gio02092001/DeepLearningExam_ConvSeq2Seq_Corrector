@@ -241,7 +241,7 @@ class BuildDictionary_Map:
             if os.path.exists(tokenized_file):
                 tqdm.write("Loading pre-tokenized sentences...")
                 with open(tokenized_file, "rb") as f:
-                    tokenized_sentences = pickle.load(f)
+                    sentences = pickle.load(f)
             else:
                 tqdm.write("Tokenizing sentences...")
                 sentences = self.tokenizer.tokenize(article)
