@@ -231,39 +231,28 @@ class BuildDictionary_Map:
         """
         Reads a dataset, tokenizes sentences, and builds word dictionaries.
         """
-        tqdm.write("Reading file...")
-        with open("data/WikiArticlesCorrect", "r", encoding="utf-16") as f:
-            article = f.read()
-        #encoding_info = chardet.detect(article)
-        #tqdm.write(encoding_info)
         if self.bpe==0:
-            tokenized_file = "data/tokenized_sentences.pkl"
-
-            if os.path.exists(tokenized_file):
+            if os.path.exists("data/tokenized_sentences"):
                 tqdm.write("Loading pre-tokenized sentences...")
-                with open(tokenized_file, "rb") as f:
-                    tokenized_sentences = pickle.load(f)
+                with open("data/tokenized_sentences", "rb") as f:
+                    sentences = pickle.load(f)
             else:
+                tqdm.write("Reading file...")
+                with open("data/WikiArticlesCorrect", "r", encoding="utf-16") as f:
+                    article = f.read()
                 tqdm.write("Tokenizing sentences...")
                 sentences = self.tokenizer.tokenize(article)
-                tokenized_sentences = []
+                with open("data/tokenized_sentences", "wb") as f:
+                    pickle.dump(sentences, f)
 
-                for sentence in tqdm(sentences, desc="Tokenizing sentences"):
-                    words = [w for w in word_tokenize(sentence) if w not in string.punctuation]
-                    if words:  # scarta frasi vuote
-                        tokenized_sentences.append(words)
-
-                with open(tokenized_file, "wb") as f:
-                    pickle.dump(tokenized_sentences, f)
-
-                tqdm.write(f"Tokenized sentences saved to {tokenized_file}")
 
             all_words = []
             all_target_words=[]
             all_sentences = {}
 
-            # iterate over the first N sentences
-            for words in tqdm(tokenized_sentences[:self.sentenceNumber], desc="Processing sentences"):
+            for sentence in tqdm(sentences[:self.sentenceNumber], desc="Processing sentences"):
+                #tqdm.write(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
+                words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
                 finalSentence = ' '.join(words)
                 all_words.extend(words)
                 all_target_words.extend(words)
@@ -272,6 +261,7 @@ class BuildDictionary_Map:
                     corrupted_words = [word for word in word_tokenize(corrupted_sentence) if word not in string.punctuation]
                     all_words.extend(corrupted_words)
                     all_sentences.setdefault(corrupted_sentence, finalSentence)
+
 
             index_to_word = {idx: word for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
             word_to_index = {word: idx for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
