@@ -253,7 +253,7 @@ class BuildDictionary_Map:
 
             for sentence in tqdm(sentences[:self.sentenceNumber], desc="Processing sentences"):
                 #tqdm.write(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
-                words = [word for word in word_tokenize(sentence) if word not in string.punctuation]
+                words = [word for word in word_tokenize(sentence)]
                 finalSentence = ' '.join(words)
                 all_words.extend(words)
                 all_words.extend("'")
@@ -262,7 +262,7 @@ class BuildDictionary_Map:
 
 
                 for corrupted_sentence in self.corrupt_sentence(words):
-                    corrupted_words = [word for word in word_tokenize(corrupted_sentence) if word not in string.punctuation]
+                    corrupted_words = [word for word in word_tokenize(corrupted_sentence)]
                     all_words.extend(corrupted_words)
                     all_sentences.setdefault(corrupted_sentence, finalSentence)
 
@@ -299,7 +299,7 @@ class BuildDictionary_Map:
 
             all_texts = []
             for sentence in tqdm(sentences[:self.sentenceNumber], desc="Collecting texts for BPE"):
-                words = [w for w in sentence.split() if w not in string.punctuation]
+                words = [w for w in sentence.split()]
                 if words:
                     all_texts.append(' '.join(words))
 
