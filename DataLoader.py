@@ -21,7 +21,7 @@ class TranslationDataset(Dataset):
         for idx, (source, target) in enumerate(tqdm(data_dict.items(), desc="Tokenizing data")):
             ''' quello che ho fatto nel train dovrei farlo qui perché devo farlo nel dataset a quel punto però posso togliere il 5. step perché tanto ce lo metto io qui già tutto.'''
             if builder.bpe==0:
-                # Tokenize
+                """# Tokenize
                 source_tokens = self.tokenize_fn.tokenize(source)
                 target_tokens = self.tokenize_fn.tokenize(target)
 
@@ -54,8 +54,8 @@ class TranslationDataset(Dataset):
                     else:
                         source_indices.append(idx)
                 source_indices.append(builder.sourceEOS)
-                """
-                self.data.append((source_indices, target_indices))
+                if (len(source_indices)==len(target_indices)):
+                    self.data.append((source_indices, target_indices))
             else:
                 source_enc = builder.bpe_tokenizer.encode(source)
                 target_enc = builder.bpe_tokenizer.encode(target)
