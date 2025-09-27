@@ -39,7 +39,9 @@ class TranslationDataset(Dataset):
                     idx = word_dict.get(token)
                     if idx is None:
                         tqdm.write(f"[DEBUG] Missing in word_dict: '{token}' | source: {source}")
-                    source_indices.append(idx)
+                        source_indices.append(builder.sourceUNK)
+                    else:
+                        source_indices.append(idx)
                 source_indices.append(builder.sourceEOS)
 
                 target_indices = [builder.targetSOS]

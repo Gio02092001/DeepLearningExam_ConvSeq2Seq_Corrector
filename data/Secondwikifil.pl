@@ -74,6 +74,16 @@ while (<>) {
     # elimina righe vuote
     s/^\s*$//mg;
 
+    # Remove words that start with double dashes (--h, --N, --Z, etc.)
+    s/\b--[A-Za-z0-9]+\b//g;
+
+    # Remove standalone double dashes
+    s/\s--\s/ /g;
+
+    # Remove isolated single capital letters followed by a dot (U., D., B.)
+    s/\b[A-Z]\.\b//g;
+
+
     # Output
     print $_, "\n";
   }
