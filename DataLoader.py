@@ -57,8 +57,10 @@ class TranslationDataset(Dataset):
                 if (len(source_indices)==len(target_indices)):
                     self.data.append((source_indices, target_indices))
             else:
-                source_enc = builder.bpe_tokenizer.encode(source)
-                target_enc = builder.bpe_tokenizer.encode(target)
+                source_text = " ".join(source)
+                target_text = " ".join(target)
+                source_enc = builder.bpe_tokenizer.encode(source_text)
+                target_enc = builder.bpe_tokenizer.encode(target_text)
 
                 # Ottieni gli ID
                 source_indices = source_enc.ids + [builder.sourceEOS]
