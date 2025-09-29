@@ -180,7 +180,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     )[0]  # prendi la prima
                     source_texts.append(corrupted_sent)
 
-                corrupted_batch = builder.bpe_tokenizer.encode_batch(source_texts)
+                corrupted_batch = builder.bpe_tokenizer.encode_batch(" ".join(source_texts))
                 corrupted_ids = [torch.tensor([builder.sourceSOS] + enc.ids + [builder.sourceEOS], dtype=torch.long)
                   for enc in corrupted_batch]
                 source = pad_sequence(corrupted_ids, batch_first=True, padding_value=builder.sourcePAD).to(model.device)
@@ -191,7 +191,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     sentence = " ".join(words)
                     target_texts.append(sentence)
 
-                target_batch_encoded = builder.bpe_tokenizer.encode_batch(target_texts)
+                target_batch_encoded = builder.bpe_tokenizer.encode_batch(" ".join(target_texts))
                 target_ids = [torch.tensor([builder.targetSOS] + enc.ids + [builder.targetEOS], dtype=torch.long)
                                 for enc in target_batch_encoded]
                 target = pad_sequence(target_ids, batch_first=True, padding_value=builder.targetPAD).to(model.device)
