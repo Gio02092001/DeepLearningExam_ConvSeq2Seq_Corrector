@@ -30,8 +30,8 @@ class TranslationDataset(Dataset):
                 target_indices = [builder.targetSOS] + [target_word_dict.get(token) for token in target_tokens]
                 """
                 # Tokenize
-                source_tokens = [t for t in source ]
-                target_tokens = [t for t in target ]
+                source_tokens = source
+                target_tokens = target
                 skip=False
                 target_indices = [builder.targetSOS]
                 for token in target_tokens:

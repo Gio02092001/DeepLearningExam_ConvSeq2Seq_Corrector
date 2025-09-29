@@ -252,12 +252,12 @@ class BuildDictionary_Map:
 
             for sentence in tqdm(sentences[:self.sentenceNumber], desc="Processing sentences"):
                 #tqdm.write(f"Processing sentence {counter + 1}/{len(sentences)} ({(counter + 1) / len(sentences) * 100:.2f}%)")
-                words = [word for word in self.tokenizer.tokenize(sentence)]
+                #words = [word for word in self.tokenizer.tokenize(sentence)]
 
-                all_words.extend(words)
-                all_target_words.extend(words)
+                all_words.extend(sentence)
+                all_target_words.extend(sentence)
 
-                for corrupted_sentence in self.corrupt_sentence(words):
+                for corrupted_sentence in self.corrupt_sentence(sentence):
 
                     all_words.extend(corrupted_sentence)
                     all_sentences[tuple(corrupted_sentence)] = sentence
