@@ -242,6 +242,7 @@ class BuildDictionary_Map:
                     article = f.read()
                 tqdm.write("Tokenizing sentences...")
                 sentences = re.split(r'[.!?]', article)
+                tqdm.write("Split Done")
                 sentences = self.tokenizer.tokenize_sents(sentences)
                 with open("data/tokenized_sentences", "wb") as f:
                     pickle.dump(sentences, f)
