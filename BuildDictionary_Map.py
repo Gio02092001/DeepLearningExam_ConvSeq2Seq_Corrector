@@ -328,7 +328,7 @@ class BuildDictionary_Map:
             for sentence in tqdm(all_texts, desc="Corrupting with BPE"):
                 words = sentence.split()
                 for corrupted_sentence in self.corrupt_sentence(words):
-                    all_sentences[corrupted_sentence] = sentence
+                    all_sentences[tuple(corrupted_sentence)] = sentence
 
             # 🔹 8. Salvataggi
             with open(f'data/dictionaries/{self.sentenceNumber}_word_to_index_BPE.pkl', 'wb') as f:
