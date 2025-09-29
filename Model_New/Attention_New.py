@@ -50,7 +50,11 @@ class Attention_New(nn.Module):
         decoderstate = (decoderOutput + targetEmbedding_g) * math.sqrt(0.5)
 
         # Compute scalar attention scores: [batch, decoder_len, encoder_len]
-        scalarProducts = torch.bmm(decoderstate, encoderOutput_z.transpose(1,2))  # [batch, decoder_len, encoder_len]
+        try:
+            scalarProducts = torch.bmm(decoderstate, encoderOutput_z.transpose(1,2))  # [batch, decoder_len, encoder_len]
+        except:
+            print("decoderstate:", decoderstate.shape)  # [batch, dec_len, hidden]
+            print("encoderOutput_z:", encoderOutput_z.shape)  # [batch, enc_len, hidden]
         sz = scalarProducts.size()
         attentionScores = F.softmax(scalarProducts.view(sz[0] * sz[1], sz[2]), dim=1)
         attentionScores = attentionScores.view(sz)
