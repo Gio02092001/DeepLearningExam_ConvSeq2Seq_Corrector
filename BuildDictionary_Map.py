@@ -218,13 +218,13 @@ class BuildDictionary_Map:
 
         results = []
         for _ in range(times):
-            if random.random() < 0.1:
+            if random.random() > corruption_prob:
                 # ✅ mantieni la frase intatta
-                results.append(' '.join(words))
+                results.append(words[:])
             else:
                 # 🔁 corrompi parola per parola
                 corrupted = [self.corrupt_word_multiple(word, corruption_prob) for word in words]
-                results.append(' '.join(corrupted))
+                results.append(corrupted)
         return results
 
     def buildDictionary(self, timestamp):
@@ -258,9 +258,9 @@ class BuildDictionary_Map:
                 all_target_words.extend(words)
 
                 for corrupted_sentence in self.corrupt_sentence(words):
-                    corrupted_words = [word for word in self.tokenizer.tokenize(corrupted_sentence)]
-                    all_words.extend(corrupted_words)
-                    all_sentences.setdefault(corrupted_sentence, sentence)
+
+                    all_words.extend(corrupted_sentence)
+                    all_sentences[tuple(corrupted_sentence)] = sentence
 
 
             index_to_word = {idx: word for idx, word in enumerate(pd.Series(all_words).drop_duplicates())}
