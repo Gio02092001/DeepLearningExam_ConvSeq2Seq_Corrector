@@ -134,7 +134,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             target = batch['target'].to(model.device)
 
             # 1) Estrai source_ids e portali su CPU
-
+            source_begin=source
 
             corrupted_ids = []
             if builder.bpe == 0:
@@ -169,6 +169,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                         source = torch.tensor(corrupted_ids, device=model.device)
                     except:
                         print(corrupted_words)
+                        print("Begin: ", source_begin)
             else:
                 source_texts = []
                 for sent_ids in source:
