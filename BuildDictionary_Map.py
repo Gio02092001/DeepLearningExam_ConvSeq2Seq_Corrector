@@ -241,8 +241,7 @@ class BuildDictionary_Map:
                 with open("data/WikiArticlesCorrect", "r", encoding="utf-16") as f:
                     article = f.read()
                 tqdm.write("Tokenizing sentences...")
-                sentences = re.split(r'[.!?]', article)
-
+                sentences = self.tokenizer.tokenize_sents(article)
                 with open("data/tokenized_sentences", "wb") as f:
                     pickle.dump(sentences, f)
 
