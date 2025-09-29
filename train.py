@@ -165,11 +165,9 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
                     corrupted_ids.append(corrupted_idx)
                     # 7) ricostruisci il tensore e rimandalo su GPU
-                    try:
-                        source = torch.tensor(corrupted_ids, device=model.device)
-                    except:
-                        print(corrupted_words)
-                        print("Begin: ", source_begin)
+
+                    source = torch.tensor(corrupted_ids, device=model.device)
+
             else:
                 source_texts = []
                 for sent_ids in source:
