@@ -32,7 +32,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     no_improve = 0
     best_metric = -float('inf')
     model.train()
-    loss_fn = torch.nn.CrossEntropyLoss(reduction="mean")  # Standard loss, no need to ignore padding
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=builder.targetPAD, reduction="mean")  # Standard loss, no need to ignore padding
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     if builder.bpe==0:
         tokenizer = builder.tokenizer
@@ -41,7 +41,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
 
     # Create dataset
-    dataset = TranslationDataset(train_data, word_dict,target_word_dict, builder, tokenizer)
+    dataset = TranslationDataset(train_data, word_dict,target_word_dict, builder, tokenizer, fixedNumberOfInputElements)
     tqdm.write("Dataset created")
     # Create batches of equal length sequences
     batch_sampler = create_equal_length_batches(dataset,fixedNumberOfInputElements, batch_size)
@@ -84,7 +84,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
     )
 
     # Create dataset
-    validation_dataset = TranslationDataset(validation_data, word_dict, target_word_dict, builder, tokenizer)
+    validation_dataset = TranslationDataset(validation_data, word_dict, target_word_dict, builder, tokenizer, fixedNumberOfInputElements)
     tqdm.write("Validation Dataset created")
     # Create batches of equal length sequences
     batch_sampler_validation = create_equal_length_batches(validation_dataset, fixedNumberOfInputElements, batch_size)
@@ -98,6 +98,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         collate_fn=validation_dataset.collate_equal_length_fn,
         num_workers=workers,
         pin_memory=is_cuda  # Only pin memory if using GPU
+        
     )
     if ckpt is None:
         epochNumber=1
@@ -169,7 +170,44 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     source = torch.tensor(corrupted_ids, device=model.device)
 
             else:
+                # --- Source ---
                 source_texts = []
+                for sent_ids in source:
+                    words = [index_to_word_dict.get(int(w), "<unk>") for w in sent_ids]
+                    # optionally corrupt words
+                    corrupted_sent = builder.corrupt_sentence(words, corruption_prob=0.02, times=1)[0]
+                    source_texts.append(" ".join(corrupted_sent))
+
+                # encode each sentence individually using BPE
+                source_batch_encoded = builder.bpe_tokenizer.encode_batch(source_texts)
+
+                # convert to tensors with SOS/EOS and pad
+                corrupted_ids = [
+                        torch.tensor([builder.sourceSOS] + enc.ids + [builder.sourceEOS], dtype=torch.long)
+                        for enc in source_batch_encoded
+                ]
+                source = pad_sequence(corrupted_ids, batch_first=True, padding_value=builder.sourcePAD).to(model.device)
+
+                # --- Target ---
+                target_texts = []
+                for sent_ids in target:
+                    words = [index_to_target_word_dict.get(int(w), "<unk>") for w in sent_ids]
+                    sentence = " ".join(words)
+                    target_texts.append(sentence)
+
+                # encode batch
+                target_batch_encoded = builder.bpe_tokenizer.encode_batch(target_texts)
+
+                # convert to tensors with SOS/EOS and pad
+                target_ids = [
+                        torch.tensor([builder.targetSOS] + enc.ids + [builder.targetEOS], dtype=torch.long)
+                        for enc in target_batch_encoded
+                ]
+                target = pad_sequence(target_ids, batch_first=True, padding_value=builder.targetPAD).to(model.device)
+
+                """
+                source_texts = []
+                decoded_sentence=[]
                 for sent_ids in source:
                     words = [index_to_word_dict.get(int(w), "<unk>") for w in sent_ids]
                     sentence = " ".join(words)
@@ -178,9 +216,12 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                         corruption_prob=0.02,
                         times=1
                     )[0]  # prendi la prima
-                    source_texts.append(corrupted_sent)
-
-                corrupted_batch = builder.bpe_tokenizer.encode_batch(" ".join(source_texts))
+                    source_texts.append(" ".join(corrupted_sent))
+                print(source_texts)
+                for sen in source_texts:
+                    decoded= builder.bpe_tokenizer.encode(sen)
+                    decoded_sentence.append(decoded)
+                corrupted_batch =  builder.bpe_tokenizer.encode(" ".join(source_texts))
                 corrupted_ids = [torch.tensor([builder.sourceSOS] + enc.ids + [builder.sourceEOS], dtype=torch.long)
                   for enc in corrupted_batch]
                 source = pad_sequence(corrupted_ids, batch_first=True, padding_value=builder.sourcePAD).to(model.device)
@@ -195,10 +236,10 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 target_ids = [torch.tensor([builder.targetSOS] + enc.ids + [builder.targetEOS], dtype=torch.long)
                                 for enc in target_batch_encoded]
                 target = pad_sequence(target_ids, batch_first=True, padding_value=builder.targetPAD).to(model.device)
+                """
 
 
-
-
+            sanity_check_batch(source, target, model, builder, word_dict, target_word_dict)
 
             # Forward pass with batch
             predictions, logits = model(source, target)
@@ -355,3 +396,30 @@ def tokenizeSentence(input_sentence):
     mt = MosesTokenizer('en')
     return mt.tokenize(input_sentence)
 
+def sanity_check_batch(source, target, model, builder, word_dict, target_word_dict):
+    # --- Check source embedding ---
+    src_max = source.max().item()
+    src_min = source.min().item()
+    src_vocab = len(word_dict)
+    print(f"[CHECK] Source min={src_min}, max={src_max}, embedding size={src_vocab}")
+    assert 0 <= src_min, "❌ Negative index in source!"
+    assert src_max < src_vocab, f"❌ Source index {src_max} >= embedding size {src_vocab}"
+
+    # --- Check target embedding ---
+    tgt_max = target.max().item()
+    tgt_min = target.min().item()
+    tgt_vocab = len(target_word_dict)
+    print(f"[CHECK] Target min={tgt_min}, max={tgt_max}, embedding size={tgt_vocab}")
+    assert 0 <= tgt_min, "❌ Negative index in target!"
+    assert tgt_max < tgt_vocab, f"❌ Target index {tgt_max} >= embedding size {tgt_vocab}"
+
+    
+    # --- Check special tokens ---
+    print("[CHECK] Special tokens:",
+          f"SOS={builder.sourceSOS}, EOS={builder.sourceEOS}, PAD={builder.sourcePAD}")
+    assert builder.sourceSOS < src_vocab, "❌ SOS out of range for source embedding"
+    assert builder.sourceEOS < src_vocab, "❌ EOS out of range for source embedding"
+    assert builder.sourcePAD < src_vocab, "❌ PAD out of range for source embedding"
+    assert builder.targetEOS < tgt_vocab, "❌ EOS out of range for target embedding"
+    assert builder.targetPAD < tgt_vocab, "❌ PAD out of range for target embedding"
+    assert builder.targetSOS < tgt_vocab, "❌ SOS out of range for target embedding"

@@ -83,7 +83,7 @@ def main():
     pretrained=None
     ckpt=None
     # scelta del device
-    best_gpu = pick_best_gpu()
+    best_gpu = None # pick_best_gpu()
     if best_gpu is not None:
         device = torch.device(f"cuda:{best_gpu}")
         print(f"Usando CUDA device gpu:{best_gpu}")

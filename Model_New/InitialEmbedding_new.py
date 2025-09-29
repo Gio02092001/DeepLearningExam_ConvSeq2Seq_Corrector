@@ -64,6 +64,7 @@ class Embedding(nn.Module):
 
         # Lookup positional embeddings for positions [0...seq_len-1]
         positions = torch.arange(0, seq_len, device=input.device).unsqueeze(0).expand(batch_size, -1)
+        print(positions)
         positional_embeddings = self.embedding_positional(positions)
 
         # Add word and positional embeddings

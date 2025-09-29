@@ -234,7 +234,7 @@ class BuildDictionary_Map:
         if self.bpe==0:
             if os.path.exists("data/tokenized_sentences"):
                 tqdm.write("Loading pre-tokenized sentences...")
-                with open("data/tokenized_sentences", "rb") as f:
+                with open("data/tokenized_sentences_full", "rb") as f:
                     sentences = pickle.load(f)
             else:
                 tqdm.write("Reading file...")
@@ -244,7 +244,7 @@ class BuildDictionary_Map:
                 sentences = re.split(r'[.!?]', article)
                 tqdm.write("Split Done")
                 sentences = self.tokenizer.tokenize_sents(sentences)
-                with open("data/tokenized_sentences", "wb") as f:
+                with open("data/tokenized_sentences_full", "wb") as f:
                     pickle.dump(sentences, f)
 
 

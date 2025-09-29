@@ -9,7 +9,7 @@ from tqdm import tqdm
 class TranslationDataset(Dataset):
     """Custom dataset for translation pairs"""
 
-    def __init__(self, data_dict, word_dict, target_word_dict, builder, tokenize_fn):
+    def __init__(self, data_dict, word_dict, target_word_dict, builder, tokenize_fn, fixedNumberofInputElements):
         self.data = []
         self.tokenize_fn = tokenize_fn
         self.word_dict = word_dict
@@ -54,7 +54,7 @@ class TranslationDataset(Dataset):
                     else:
                         source_indices.append(idx)
                 source_indices.append(builder.sourceEOS)
-                if (len(source_indices)==len(target_indices)):
+                if (len(source_indices)==len(target_indices) and len(source_indices) < fixedNumberofInputElements):
                     self.data.append((source_indices, target_indices))
             else:
                 source_text = " ".join(source)
@@ -67,7 +67,8 @@ class TranslationDataset(Dataset):
                 target_indices = [builder.targetSOS] + target_enc.ids
 
                 # Salva la coppia (source, target)
-                self.data.append((source_indices, target_indices))
+                if (len(source_indices) == len(target_indices) and len(source_indices) < fixedNumberofInputElements):
+                    self.data.append((source_indices, target_indices))
 
             # tqdm.write progress every 0.1%
 
