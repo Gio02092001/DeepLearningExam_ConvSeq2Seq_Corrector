@@ -239,7 +239,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 """
 
 
-            sanity_check_batch(source, target, model, builder, word_dict, target_word_dict)
+            #sanity_check_batch(source, target, model, builder, word_dict, target_word_dict)
 
             # Forward pass with batch
             predictions, logits = model(source, target)

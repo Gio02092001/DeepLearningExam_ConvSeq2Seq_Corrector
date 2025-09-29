@@ -54,7 +54,7 @@ class TranslationDataset(Dataset):
                     else:
                         source_indices.append(idx)
                 source_indices.append(builder.sourceEOS)
-                if (len(source_indices)==len(target_indices) and len(source_indices) < fixedNumberofInputElements):
+                if (len(source_indices)==len(target_indices) and len(source_indices) <= fixedNumberofInputElements):
                     self.data.append((source_indices, target_indices))
             else:
                 source_text = " ".join(source)
@@ -67,7 +67,7 @@ class TranslationDataset(Dataset):
                 target_indices = [builder.targetSOS] + target_enc.ids
 
                 # Salva la coppia (source, target)
-                if (len(source_indices) == len(target_indices) and len(source_indices) < fixedNumberofInputElements):
+                if (len(source_indices) < fixedNumberofInputElements-1 and len(target_indices) < fixedNumberofInputElements-1):
                     self.data.append((source_indices, target_indices))
 
             # tqdm.write progress every 0.1%

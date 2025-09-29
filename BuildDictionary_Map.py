@@ -318,10 +318,11 @@ class BuildDictionary_Map:
             vocab = tokenizer.get_vocab()
             word_to_index = {word: idx for word, idx in vocab.items()}
             index_to_word = {idx: word for word, idx in vocab.items()}
-
+            print(index_to_word[1000], "+", index_to_word[1100])
             # per semplicità target = stesso vocabolario
             target_word_to_index = word_to_index
             index_to_target_word = index_to_word
+            print(index_to_target_word[1000], "+", index_to_target_word[1100])
 
             # 🔹 7. Genera il SentenceMap (corrupted → originale)
             all_sentences = {}

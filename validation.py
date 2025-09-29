@@ -59,7 +59,7 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
             # Ottieni sorgenti e target
             src = batch['source'].to(device)                 # [batch_size, src_len]
             tgt = batch['target'].to(device)                 # [batch_size, tgt_len]
-
+            
             # + passata teacher-forcing per somma della cross‐entropy
             _, logits_tf = model(src, tgt)
             # + loss sommata su tutti i token non-pad
@@ -73,11 +73,11 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
             total_loss += loss_tf
             total_ppl_tokens += nonpad
             # Stampa dell'input (raw token ids)
-            #print("Input ids:", src.tolist())
-
+            
+            
             # Generazione con beam search
             predictions, _, _ = beamSearch(model, src, None, beam_width, builder=builder)
-
+            
             # Decodifica da id a stringhe e stampa prediction
             pred_sentences = []
             ref_sentences = []
@@ -88,6 +88,7 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
                     words = [index_to_target_word[i] for i in pred_ids
                              if index_to_target_word[i] not in ['<pad>', '<sos>', '<eos>']]
                     sentence = " ".join(words)
+                    
 
                     # --- Riferimento Target---
                     ref_words = [index_to_target_word[i] for i in ref_ids
@@ -101,17 +102,21 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
 
                 else:
                     # --- Predizione ---
-                    sentence = builder.bpe_tokenizer.decode([
+                    sentence =[
                         i for i in pred_ids if i not in [builder.targetPAD, builder.targetSOS, builder.targetEOS]
-                    ])
+                    ]
+                    sentence=builder.bpe_tokenizer.decode(sentence)
                     words = sentence.split()
-
+                    
                     # --- Riferimento ---
-                    ref_sentence = builder.bpe_tokenizer.decode([
+                    ref_sentence = [
                         i for i in ref_ids if i not in [builder.targetPAD, builder.targetSOS, builder.targetEOS]
-                    ])
-                    ref_words = ref_sentence.split()
-
+                    ]
+                    
+                    ref_sentence= builder.bpe_tokenizer.decode(ref_sentence)
+                    
+                    ref_words=ref_sentence.split()
+                    
                     # --- Input ---
                     inp_sentence = builder.bpe_tokenizer.decode([
                         i for i in inp_ids if i not in [builder.sourcePAD, builder.sourceSOS, builder.sourceEOS]
@@ -274,5 +279,5 @@ def beamSearch(model, source, progress_bar, beam_width, builder, max_output_leng
 
 
         final.append(seq)
-
+    
     return final, None, None
