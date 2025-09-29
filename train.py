@@ -153,7 +153,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                     )
 
                     # 4) prendi la prima (o randomly una delle volte, se vuoi variarlo)
-                    corrupted_words = corrupted_sentences[0].split()
+                    corrupted_words = corrupted_sentences[0]
 
                     # 5) parola → idx, con fallback su unk
                     corrupted_idx =[]
