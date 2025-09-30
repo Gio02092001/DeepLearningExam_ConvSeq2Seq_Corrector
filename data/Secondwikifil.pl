@@ -1,77 +1,80 @@
 #!/usr/bin/perl
 
-$/ = ">";                     # input record separator
+$/ = ">";                               # sets the input record separator to ">"
 while (<>) {
-  if (/<text /) { $text = 1; }    # keep only between <text> ... </text>
-  if (/#redirect/i) { $text = 0; }  # skip redirects
+  if (/<text /) { $text = 1; }          # start processing inside <text>
+  if (/#redirect/i) { $text = 0; }      # skip redirects
   if ($text) {
 
     # Stop at end of text
-    if (/<\/text>/) { $text = 0; }
+    if (/<\/text>/) { $text = 0; }      # stop at the end of <text>
 
-    # --- Rimozioni / sostituzioni ---
-    s/<.*?>//g;             # remove xml tags -> replace with space
-    s/&amp;/&/g;             # decode URL encoded chars
+
+    s/<.*?>//g;                         # remove all XML tags
+    s/&amp;/&/g;                        # decode HTML special characters
     s/&lt;/</g;
     s/&gt;/>/g;
-    s/<ref[^<]*<\/ref>//g;  # remove references <ref...> ... </ref>
-    s/<[^>]*>//g;           # remove xhtml tags
-    s/\[http:[^] ]*//g;     # remove url, keep visible text later
+    s/<ref[^<]*<\/ref>//g;              # remove <ref> ... </ref> references
+    s/<[^>]*>//g;                       # Remove any remaining tags
+    s/<div[^>]*>.*?<\/div>//sg;         # Remove <div> blocks
+    s/<references\s*\/>//ig;            # Remove self-closing <references/>
+
+    s/\[http:[^] ]*//g;                             # Remove external links but keep visible text
     s/\|thumb//ig;
     s/\|left//ig;
     s/\|right//ig;
     s/\|\d+px//ig;
     s/\[\[image:[^\[\]]*\|//ig;
-    s/\[\[category:([^|\]]*)[^]]*\]\]/$1/ig;  # show categories without markup
-    s/\[\[[a-z\-]*:[^\]]*\]\]//g;  # remove links to other languages
-    s/\[\[[^\|\]]*\|//g;   # remove wiki url, preserve visible text
+    s/\[\[category:([^|\]]*)[^]]*\]\]/$1/ig;        # show categories without markup
+    s/\[\[[a-z\-]*:[^\]]*\]\]//g;                   # remove links to other languages
+    s/\[\[[^\|\]]*\|//g;   # Remove templates like {{...}}
     s/\{\{[^\}]*\}\}//g;   # remove {{icons}} and {tables}
     s/\{[^\}]*\}//g;
     s/\[|\]//g;            # remove [ and ]
     s/&[^;]*;//g;          # remove URL encoded chars
-    s/<div[^>]*>.*?<\/div>//sg;
+
     s/<[^>]*>//g;
-    s/<references\s*\/>//ig;
+    s/<references\s*\/>//ig;    # Remove self-closing <references/>
 
     s/^==[^=]+==\s*//g;
     s/'''[^']*'''//g;
-    s/''//g;                   # elimina doppi apici
+    s/''//g;                   # remove double apostrophes
 
-    # --- Simboli speciali ---
+    # --- Special symbols ---
     s/%/ percent /g;
     s/\$/ dollar /g;
     s/\&/ and /g;
 
-    # --- Tenere lettere, numeri, ., ?, !, -, spazi ---
+    # --- Keep letters, numbers, ., ?, !, -, spaces ---
     s/[^a-zA-Z0-9\-'.?! ]//g;
 
-    # --- Pulizia spazi ---
+    # --- Clean up spaces ---
     s/\s+/ /g;   # collapse multiple spaces
     s/^\s+|\s+$//g; # trim
 
-        # rimuove intestazioni tipo ==See also==
+    # remove headers like ==See also==
     s/^==.*?==\s*$//mg;
 
-    # rimuove sottosezioni ===Historical events===
+    # remove subsections ===Historical events===
     s/^===.*?===\s*$//mg;
 
-    # rimuove liste puntate * ...
+    # remove bullet lists * ...
     s/^\*.*$//mg;
 
-    # rimuove liste numerate # ...
+    # remove numbered lists # ...
     s/^#.*$//mg;
 
-    # rimuove template {{...}}
+    # remove templates {{...}}
     s/\{\{[^\}]*\}\}//g;
 
-    # rimuove categorie [[Category:...]]
+    # remove categories [[Category:...]]
     s/\[\[Category:[^\]]*\]\]//ig;
     s/\[\[[a-z\-]+:[^\]]*\]\]//ig;
 
-    # rimuove link interlingua [[it:...]], [[en:...]], ecc.
+    # remove language links [[it:...]], [[en:...]], etc.
     s/\[\[[a-z\-]+:[^\]]*\]\]//ig;
 
-    # elimina righe vuote
+    # remove empty lines
     s/^\s*$//mg;
 
     # Remove words that start with double dashes (--h, --N, --Z, etc.)
@@ -83,9 +86,7 @@ while (<>) {
     # Remove isolated single capital letters followed by a dot (U., D., B.)
     s/\b[A-Z]\.\b//g;
 
-
     # Output
     print $_, "\n";
   }
 }
-

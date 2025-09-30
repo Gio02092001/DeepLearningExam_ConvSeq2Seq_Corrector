@@ -1,7 +1,7 @@
 import math
 import torch.nn.functional as F
 from torch import nn
-from Model_New.LayerModules_new import LinearTransformation_New, ConvolutionalBlock_New
+from Model_New.LayerModules_new import ConvolutionalBlock_New
 
 class Encoder_New(nn.Module):
     """

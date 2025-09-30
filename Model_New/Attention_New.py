@@ -37,7 +37,6 @@ class Attention_New(nn.Module):
                     - encoderOutput_z: Tensor result from last Encoder layer [batch, seq_len, hidden_dim]
                     - c_inputEncoder: Tensor result from source embedding [batch, seq_len, hidden_dim]
 
-
             Returns:
                 output: Tensor resulting from attention computation [batch, decoder_len, hidden_dim]
         """

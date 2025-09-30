@@ -27,7 +27,6 @@ class InitialEmbedding_New(nn.Module):
         input = self.dropout(input) # apply dropout
         return input
 
-
 class Embedding(nn.Module):
     """
         Custom embedding layer that combines:
