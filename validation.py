@@ -10,7 +10,7 @@ import editdistance
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_recall_fscore_support
 import warnings
-
+import gc
 
 
 def validation(model, validation_loader, index_to_target_word, index_to_word, builder, beam_width=5,  device=None):
