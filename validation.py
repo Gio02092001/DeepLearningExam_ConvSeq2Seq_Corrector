@@ -153,6 +153,8 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
 
             all_hypotheses.extend(pred_sentences)
             all_references.extend(ref_sentences)
+            torch.cuda.empty_cache()
+            gc.collect()
 
         print("Reference Example: ", ref_sentence)
         print("Prediction Example: ", sentence)
