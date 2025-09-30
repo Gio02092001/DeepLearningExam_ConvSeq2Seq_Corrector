@@ -27,6 +27,10 @@ def update_config(trial):
     config["beamWidth"] = trial.suggest_int("beamWidth", 4, 5)
     config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.3, 0.5)
     x = trial.suggest_int("hidden_dim", 750, 900)
+    config["learning_rate"] = trial.suggest_loguniform("learning_rate", 0.25, 0.3)
+    config["beamWidth"] = trial.suggest_int("beamWidth", 4,5)
+    config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.3, 0.5)
+    x = trial.suggest_int("hidden_dim", 750, 900)
     config["hidden_dim"] = x
     config["embedding_dim"] = x
     config["encoderLayer"] = trial.suggest_int("encoderLayer", 4, 7)
@@ -34,6 +38,9 @@ def update_config(trial):
     config["batchSize"] = trial.suggest_int("batchSize", 32, 64)
     config['dataSet_probability'] = trial.suggest_uniform("dataSet_probability", 0.05, 0.18)
     config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 3, 4)
+    config["batchSize"] = trial.suggest_int("batchSize", 32, 64)
+    config['dataSet_probability']= trial.suggest_uniform("dataSet_probability", 0.05, 0.18)
+    config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 3,4 )
 
 
     with open(CONFIG_PATH, "w") as f:
