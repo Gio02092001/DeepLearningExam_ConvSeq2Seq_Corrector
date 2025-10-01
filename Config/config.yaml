@@ -1,7 +1,7 @@
-BPE: 1
+BPE: 0
 batchSize: 37
 beamWidth: 5
-dataSet_Sentence: 1000
+dataSet_Sentence: 5000
 dataSet_probability: 0.14399281515235848
 dataSet_repetition: 3
 decoderLayer: 8
