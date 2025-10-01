@@ -192,9 +192,14 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
                 target_texts = []
                 for sent_ids in target:
-                    words = [index_to_target_word_dict.get(int(w), "<unk>") for w in sent_ids]
-                    sentence = " ".join(words)
-                    target_texts.append(sentence)
+                    clean_ids_tgt = [token_id for token_id in sent_ids.tolist() if
+                                 token_id not in [builder.targetPAD, builder.targetEOS, builder.targetSOS]]
+                    decoded_text_tgt = builder.bpe_tokenizer.decode(clean_ids_tgt)
+                    words_tgt = decoded_text_tgt.split()
+                    corrupted_sent_tgt= builder.corrupt_sentence(words_tgt, corruption_prob=0.02, times=1)[0]
+                    target_texts.append(" ".join(corrupted_sent_tgt))
+                 
+                    
                 target_batch_encoded = builder.bpe_tokenizer.encode_batch(target_texts)
                 target_ids = [
                         torch.tensor([builder.targetSOS] + enc.ids + [builder.targetEOS], dtype=torch.long)

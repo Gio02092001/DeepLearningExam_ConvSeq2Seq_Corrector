@@ -384,7 +384,7 @@ class BuildDictionary_Map:
 
             # Collect sentences as strings for the BPE trainer.
             all_texts = []
-            for sentence in tqdm(sentences[:self.sentenceNumber], desc="Collecting texts for BPE"):
+            for sentence in tqdm(sentences, desc="Collecting texts for BPE"):
                 words = [w for w in sentence.split()]
                 if words:
                     all_texts.append(' '.join(words))
@@ -414,7 +414,7 @@ class BuildDictionary_Map:
             for sentence in tqdm(all_texts, desc="Corrupting with BPE"):
                 words = sentence.split()
                 for corrupted_sentence in self.corrupt_sentence(words):
-                    all_sentences[tuple(corrupted_sentence)] = sentence
+                    all_sentences[tuple(corrupted_sentence)] = words
 
             # Step 7: Save the BPE dictionaries and sentence map.
             with open(f'data/dictionaries/{self.sentenceNumber}_word_to_index_BPE.pkl', 'wb') as f:
