@@ -395,7 +395,7 @@ class BuildDictionary_Map:
             tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
 
             # Step 3: Configure the trainer.
-            trainer = trainers.BpeTrainer(vocab_size=30000, special_tokens=["<sos>", "<eos>", "<pad>", "<unk>"])
+            trainer = trainers.BpeTrainer(vocab_size=40000, special_tokens=["<sos>", "<eos>", "<pad>", "<unk>"])
 
             # Step 4: Train the tokenizer on the collected text data.
             tokenizer.train_from_iterator(all_texts, trainer)
