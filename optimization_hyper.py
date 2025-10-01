@@ -97,47 +97,7 @@ def run_trial(trial):
 
     proc.wait()
     return best_chrf
-    """
-    update_config(trial)
 
-    # Define the command to execute the main training script using the same Python interpreter.
-    cmd = [sys.executable, "main.py"]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-
-    best_chrf = 0.0
-    # Read the output from the subprocess line by line, in real-time.
-    for line in proc.stdout:
-        print(line, end="")
-        # Check if an epoch has finished using a regular expression.
-        match = re.search(r"Epoch\s+(\d+)\s+finished", line)
-        if match:
-            current_epoch = int(match.group(1))
-            # Early stopping condition: terminate the trial after 5 epochs to speed up the search.
-            if current_epoch >= 5:
-                print(f"🔴 Epoch {current_epoch} finished → stopping trial early")
-                proc.terminate()
-                break
-
-        if "Validation — BLEU:" in line:
-            # Use a regular expression to find and extract the CHR-F score.
-            match = re.search(r"CHR-F:\s*([0-9.]+)", line)
-            if match:
-                chrf = float(match.group(1))
-                # Keep track of the best CHR-F score seen so far in this trial.
-                if chrf > best_chrf:
-                    best_chrf = chrf
-
-                trial.report(chrf, current_epoch)
-                # Check if the pruner recommends stopping this trial.
-                if trial.should_prune():
-                    print(f"⏹️ Pruning at epoch {current_epoch}, CHR-F={chrf}")
-                    proc.terminate()
-                    proc.wait()
-                    raise optuna.TrialPruned()
-
-    proc.wait()
-    return best_chrf  # Optuna massimizza questa metrica
-    """
 if __name__ == "__main__":
     # --- Optuna Study Setup and Execution ---
     study = optuna.create_study(
