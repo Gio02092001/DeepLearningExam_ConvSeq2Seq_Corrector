@@ -70,8 +70,6 @@ class TranslationDataset(Dataset):
 
             # --- BPE (Byte-Pair Encoding) Tokenization Branch ---
             else:
-                print(source)
-                print(target)
                 source_text = " ".join(source)
                 target_text = " ".join(target)
 

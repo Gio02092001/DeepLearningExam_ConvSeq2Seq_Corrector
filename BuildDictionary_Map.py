@@ -411,7 +411,7 @@ class BuildDictionary_Map:
 
             # Step 6: Generate the sentence map (corrupted -> original).
             all_sentences = {}
-            for sentence in tqdm(all_texts, desc="Corrupting with BPE"):
+            for sentence in tqdm(all_texts[:self.sentenceNumber], desc="Corrupting with BPE"):
                 words = sentence.split()
                 for corrupted_sentence in self.corrupt_sentence(words):
                     all_sentences[tuple(corrupted_sentence)] = words
