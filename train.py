@@ -176,7 +176,10 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 # BPE case
                 source_texts = []
                 for sent_ids in source:
-                    words = [index_to_word_dict.get(int(w), "<unk>") for w in sent_ids]
+                    clean_ids = [token_id for token_id in sent_ids.tolist() if
+                                 token_id not in [builder.sourcePAD, builder.sourceEOS, builder.sourceSOS]]
+                    decoded_text = builder.bpe_tokenizer.decode(clean_ids)
+                    words = decoded_text.split()
                     corrupted_sent = builder.corrupt_sentence(words, corruption_prob=0.02, times=1)[0]
                     source_texts.append(" ".join(corrupted_sent))
 
