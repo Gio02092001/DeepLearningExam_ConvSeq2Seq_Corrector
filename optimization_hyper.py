@@ -23,26 +23,18 @@ def update_config(trial):
 
     # Suggest new hyperparameter values for the current trial.
     # Optuna will pick values from the specified ranges and distributions.
-    config["learning_rate"] = trial.suggest_loguniform("learning_rate", 0.25, 0.3)
-    config["beamWidth"] = trial.suggest_int("beamWidth", 4, 5)
-    config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.3, 0.5)
-    x = trial.suggest_int("hidden_dim", 750, 900)
-    config["learning_rate"] = trial.suggest_loguniform("learning_rate", 0.25, 0.3)
-    config["beamWidth"] = trial.suggest_int("beamWidth", 4,5)
-    config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.3, 0.5)
-    x = trial.suggest_int("hidden_dim", 750, 900)
+    config["learning_rate"] = trial.suggest_loguniform("learning_rate", 0.1, 0.4)
+    config["beamWidth"] = trial.suggest_int("beamWidth", 4, 12)
+    config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.1, 0.5)
+    x = trial.suggest_int("hidden_dim", 128, 1028)
     config["hidden_dim"] = x
     config["embedding_dim"] = x
-    config["encoderLayer"] = trial.suggest_int("encoderLayer", 4, 7)
-    config["decoderLayer"] = trial.suggest_int("decoderLayer", 5, 15)
-    config["batchSize"] = trial.suggest_int("batchSize", 32, 64)
+    config["encoderLayer"] = trial.suggest_int("encoderLayer", 2, 16)
+    config["decoderLayer"] = trial.suggest_int("decoderLayer", 2, 16)
+    config["batchSize"] = trial.suggest_int("batchSize", 32, 128)
     config['dataSet_probability'] = trial.suggest_uniform("dataSet_probability", 0.05, 0.18)
-    config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 3, 4)
-    config["batchSize"] = trial.suggest_int("batchSize", 32, 64)
-    config['dataSet_probability']= trial.suggest_uniform("dataSet_probability", 0.05, 0.18)
-    config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 3,4 )
-
-
+    config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 2, 5)
+    
     with open(CONFIG_PATH, "w") as f:
         yaml.safe_dump(config, f)
 
@@ -109,7 +101,7 @@ if __name__ == "__main__":
         direction="maximize",
         pruner=MedianPruner(n_startup_trials=5, n_warmup_steps=2)
     )
-    study.optimize(run_trial, n_trials=40)
+    study.optimize(run_trial, n_trials=50)
 
     # --- Results Reporting ---
     print("Miglior trial:")
