@@ -76,7 +76,7 @@ class TranslationDataset(Dataset):
                 # Use the trained BPE tokenizer to encode the strings into sequences of IDs.
                 source_enc = builder.bpe_tokenizer.encode(source_text)
                 target_enc = builder.bpe_tokenizer.encode(target_text)
-
+                                
                 # Get the lists of token IDs and add special tokens.
                 source_indices = source_enc.ids + [builder.sourceEOS]
                 target_indices = [builder.targetSOS] + target_enc.ids
