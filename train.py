@@ -283,7 +283,8 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             builder=builder
         )
         current_metric= valid_metrics['chrf']
-
+        for metric_name, value in valid_metrics.items():
+            writer.add_scalar(f"Validation/{metric_name}", value, epochNumber)
         # Log all validation metrics to console and TensorBoard.
         tqdm.write(
             f"Validation — "
@@ -303,8 +304,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             f"SER: {valid_metrics['ser']:.2%}, "
             f"GLEU: {valid_metrics['gleu']:.2f}"
         )
-        for metric_name, value in valid_metrics.items():
-            writer.add_scalar(f"Validation/{metric_name}", value, epochNumber)
+
 
         # --- Early Stopping and Checkpointing Logic ---
         if epochNumber == 1:
