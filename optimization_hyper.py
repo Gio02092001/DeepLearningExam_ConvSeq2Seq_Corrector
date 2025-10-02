@@ -23,17 +23,17 @@ def update_config(trial):
 
     # Suggest new hyperparameter values for the current trial.
     # Optuna will pick values from the specified ranges and distributions.
-    config["learning_rate"] = trial.suggest_loguniform("learning_rate", 0.1, 0.4)
-    config["beamWidth"] = trial.suggest_int("beamWidth", 4, 12)
-    config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.1, 0.5)
-    x = trial.suggest_int("hidden_dim", 128, 1028)
+    config["learning_rate"] = trial.suggest_loguniform("learning_rate", 0.22, 0.3)
+    config["beamWidth"] = trial.suggest_int("beamWidth", 6, 10)
+    config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.2, 0.35)
+    x = trial.suggest_int("hidden_dim", 500, 950)
     config["hidden_dim"] = x
     config["embedding_dim"] = x
-    config["encoderLayer"] = trial.suggest_int("encoderLayer", 2, 16)
-    config["decoderLayer"] = trial.suggest_int("decoderLayer", 2, 16)
+    config["encoderLayer"] = trial.suggest_int("encoderLayer", 2, 8)
+    config["decoderLayer"] = trial.suggest_int("decoderLayer", 2, 8)
     config["batchSize"] = trial.suggest_int("batchSize", 32, 128)
-    config['dataSet_probability'] = trial.suggest_uniform("dataSet_probability", 0.05, 0.18)
-    config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 2, 5)
+    config['dataSet_probability'] = trial.suggest_uniform("dataSet_probability", 0.14, 0.18)
+    config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 3, 5)
     
     with open(CONFIG_PATH, "w") as f:
         yaml.safe_dump(config, f)
@@ -57,43 +57,46 @@ def run_trial(trial):
     """
     update_config(trial)
 
-    # Define the command to execute the main training script using the same Python interpreter.
     cmd = [sys.executable, "main.py"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
     best_chrf = 0.0
-    # Read the output from the subprocess line by line, in real-time.
+    current_epoch = 0  # Inizializziamo l'epoca a 0
+
     for line in proc.stdout:
         print(line, end="")
-        # Check if an epoch has finished using a regular expression.
-        match = re.search(r"Epoch\s+(\d+)\s+finished", line)
-        if match:
-            current_epoch = int(match.group(1))
-            # Early stopping condition: terminate the trial after 5 epochs to speed up the search.
-            if current_epoch >= 5:
-                print(f"🔴 Epoch {current_epoch} finished → stopping trial early")
-                proc.terminate()
-                break
 
+        # 1. CERCA LA RIGA DI VALIDAZIONE PER LE AZIONI PRINCIPALI
         if "Validation — BLEU:" in line:
-            # Use a regular expression to find and extract the CHR-F score.
-            match = re.search(r"CHR-F:\s*([0-9.]+)", line)
-            if match:
-                chrf = float(match.group(1))
-                # Keep track of the best CHR-F score seen so far in this trial.
+            match_chrf = re.search(r"CHR-F:\s*([0-9.]+)", line)
+            if match_chrf:
+                chrf = float(match_chrf.group(1))
                 if chrf > best_chrf:
                     best_chrf = chrf
 
+                # Fai il report a Optuna per l'epoca appena conclusa
                 trial.report(chrf, current_epoch)
-                # Check if the pruner recommends stopping this trial.
+
+                # Controlla se Optuna vuole fare il pruning
                 if trial.should_prune():
                     print(f"⏹️ Pruning at epoch {current_epoch}, CHR-F={chrf}")
                     proc.terminate()
                     proc.wait()
                     raise optuna.TrialPruned()
 
+            # 2. DOPO AVER PROCESSATO LA VALIDAZIONE, CONTROLLA LO STOP ANTICIPATO
+            if current_epoch >= 5:
+                print(f"🔴 Early stopping: Trial finished after validation for epoch {current_epoch}")
+                proc.terminate()
+                break  # Esci dal ciclo di lettura dell'output
+
+        # 3. AGGIORNA SOLO LO STATO QUANDO TROVI LA FINE DI UN'EPOCA
+        match_epoch = re.search(r"Epoch\s+(\d+)\s+finished", line)
+        if match_epoch:
+            current_epoch = int(match_epoch.group(1))
+
     proc.wait()
-    return best_chrf  # Optuna massimizza questa metrica
+    return best_chrf
 
 if __name__ == "__main__":
     # --- Optuna Study Setup and Execution ---
