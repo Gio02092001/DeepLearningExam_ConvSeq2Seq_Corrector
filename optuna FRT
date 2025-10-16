@@ -1,0 +1,97 @@
+from ultralytics import YOLO
+import optuna
+import sys
+import yaml
+
+class Train:
+    def __init__(self, model, data):
+        self.model = YOLO(f"{model}.pt") #Load model to train
+        self.model.to('cuda') # Load model in GPU
+        self.data = data
+        self.device = 0 # Set target device to GPU (in case it need to be passed to model.train)
+        
+    def objective(self, trial):
+        hyp = {
+            # Training
+            'lr0': trial.suggest_float('lr0', 1e-5, 1e-1, log=True),
+            'momentum': trial.suggest_float('momentum', 0.6, 0.98),
+            'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-2, log=True),
+            'warmup_epochs': trial.suggest_int('warmup_epochs', 0, 5),
+            'warmup_momentum': trial.suggest_float('warmup_momentum', 0.5, 0.95),
+            'warmup_bias_lr': trial.suggest_float('warmup_bias_lr', 0.05, 0.8),
+            'box': trial.suggest_float('box', 0.02, 0.5),
+            'cls': trial.suggest_float('cls', 0.2, 2.0),
+            'dfl': trial.suggest_float('dfl', 0.1, 1.0),
+            'dropout': trial.suggest_float('dropout', 0.0, 0.5),
+
+            # Data Augmentation
+            'hsv_h': trial.suggest_float('hsv_h', 0.0, 1.0),
+            'hsv_s': trial.suggest_float('hsv_s', 0.0, 1.0),
+            'hsv_v': trial.suggest_float('hsv_v', 0.0, 1.0),
+            'degrees': 0.0,
+            'translate': trial.suggest_float('translate', 0.0, 1.0),
+            'scale': trial.suggest_float('scale', 0.0, 1.0),
+            'shear': trial.suggest_float('shear', -10.0, 10.0),  # limitato per stabilità
+            'perspective': trial.suggest_float('perspective', 0.0, 0.001),
+            'flipud': 0.0,
+            'fliplr': trial.suggest_float('fliplr', 0.0, 1.0),
+            'bgr': trial.suggest_float('bgr', 0.0, 1.0),
+            'mosaic': trial.suggest_float('mosaic', 0.0, 1.0),
+            'mixup': trial.suggest_float('mixup', 0.0, 1.0),
+            'cutmix': trial.suggest_float('cutmix', 0.0, 1.0),
+            'copy_paste': 0.0,
+            'auto_augment': trial.suggest_categorical('auto_augment', ['none', 'randaugment', 'autoaugment', 'augmix']),
+            'erasing': trial.suggest_float('erasing', 0.0, 0.9),
+        }
+
+        
+
+        # Salva iperparametri YAML
+        hyp_file = f'hyp_trial_{trial.number}.yaml'
+        with open(hyp_file, 'w') as f:
+            yaml.dump(hyp, f)
+
+        # Train model 100 epochs and 50 trials
+        result = self.model.train(data=self.data, imgsz=640, device=self.device, classes=[0,1,2,3,4], cos_lr=True, plots=True, batch=0.9, patience=15, epochs=50, freeze=12, fraction=0.2, time=0.25, **hyp)
+        # result['metrics/mAP50(B)']
+        # print(result)
+        return result.mean_results()[3]
+
+
+if __name__ == '__main__':
+    if len(sys.argv)<3:
+        print("Usage: python train.py model dataset")
+        sys.exit()
+    model = sys.argv[1]
+    data = sys.argv[2]
+    print(f'model: {model}, data: {data}')
+    train = Train(model, data)
+    study = optuna.create_study(direction='maximize')
+    study.enqueue_trial({'lr0': 0.01,
+            'momentum': 0.937,
+            'weight_decay': 0.0005,
+            'warmup_epochs': 3.0,
+            'warmup_momentum': 0.8,
+            'warmup_bias_lr': 0.1,
+            'box': 7.5,
+            'cls': 0.5,
+            'dfl': 1.5,
+            'hsv_h':0.015,
+            'hsv_s':0.7,
+            'hsv_v':0.4,
+            'degrees':0.0,
+            'translate':0.1,
+            'scale':0.5,
+            'shear':0.0,
+            'perspective':0.0,
+            'flipud':0.0,
+            'fliplr':0.5,
+            'bgr':0.0,
+            'mosaic':1.0,
+            'mixup':0.0,
+            'copy_paste':0.0,
+            'erasing':0.0,
+        }
+    )
+    study.optimize(train.objective, n_trials=20)
+    print(study.best_params)
