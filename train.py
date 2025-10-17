@@ -228,9 +228,12 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
             writer.flush()
 
             # Backward pass
-            loss.backward()
-            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=renormalizationLimit)
-            optimizer.step()
+            try:
+                loss.backward()
+                grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=renormalizationLimit)
+                optimizer.step()
+            except:
+                print("Loss.backward() skipped due to OOM, ","Batch_size: ", batch_size,"Seq_len: ", seq_len)
 
 
             # Accuracy token-level
