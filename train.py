@@ -288,31 +288,12 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
         current_metric= valid_metrics['chrf']
         for metric_name, value in valid_metrics.items():
             writer.add_scalar(f"Validation/{metric_name}", value, epochNumber)
-        # Log all validation metrics to console and TensorBoard.
-        tqdm.write(
-            f"Validation — "
-            f"BLEU: {valid_metrics['bleu']:.2f}, "
-            f"CHR-F: {valid_metrics['chrf']:.2f}, "
-            f"ROUGE-1: {valid_metrics['rouge1']:.4f}, "
-            f"ROUGE-2: {valid_metrics['rouge2']:.4f}, "
-            f"ROUGE-L: {valid_metrics['rougeL']:.4f}, "
-            f"Accuracy: {valid_metrics['token_accuracy']:.2%}, "
-            f"PPL: {valid_metrics['perplexity']:.2f}, "
-            f"Precision: {valid_metrics['precision']:.2%}, "
-            f"Recall: {valid_metrics['recall']:.2%}, "
-            f"F₀.₅: {valid_metrics['f0.5']:.2%}, "
-            f"F₁: {valid_metrics['f1']:.2%}, "
-            f"CER: {valid_metrics['cer']:.2%}, "
-            f"WER: {valid_metrics['wer']:.2%}, "
-            f"SER: {valid_metrics['ser']:.2%}, "
-            f"GLEU: {valid_metrics['gleu']:.2f}"
-        )
-
 
         # --- Early Stopping and Checkpointing Logic ---
         if epochNumber == 1:
             best_metric = current_metric
             no_improve = 0
+
         else:
             if current_metric > best_metric:
                 best_metric = current_metric
@@ -333,21 +314,41 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
                 print(f"Nessun miglioramento per {no_improve}/{patience} epoche")
 
             # Always save the state of the last completed epoch.
-            torch.save({
-                'epoch': epochNumber,
-                'model_state': model.state_dict(),
-                'optimizer_state': optimizer.state_dict(),
-                'best_metric_ChrF': best_metric,
-                'startFineTuning': startFineTuning,
-                'no_improve': no_improve,
-                'learning_rate': optimizer.param_groups[0]['lr'],
-                'global_step': global_step
-            }, f"models/{timestamp}/last_model.pt")
-            print(f" Saved current model at epoch {epochNumber} (metric={current_metric:.2f})")
 
         if no_improve > patience:
             scheduler.step()
             startFineTuning=True
             print(f"PATIENCE superata → scheduler.step() invocato")
             no_improve = 0
+        
+        torch.save({
+            'epoch': epochNumber,
+            'model_state': model.state_dict(),
+            'optimizer_state': optimizer.state_dict(),
+            'best_metric_ChrF': best_metric,
+            'startFineTuning': startFineTuning,
+            'no_improve': no_improve,
+            'learning_rate': optimizer.param_groups[0]['lr'],
+            'global_step': global_step
+        }, f"models/{timestamp}/last_model.pt")
+        print(f" Saved current model at epoch {epochNumber} (metric={current_metric:.2f})")
         epochNumber+=1
+        # Log all validation metrics to console and TensorBoard.
+        tqdm.write(
+            f"Validation — "
+            f"BLEU: {valid_metrics['bleu']:.2f}, "
+            f"CHR-F: {valid_metrics['chrf']:.2f}, "
+            f"ROUGE-1: {valid_metrics['rouge1']:.4f}, "
+            f"ROUGE-2: {valid_metrics['rouge2']:.4f}, "
+            f"ROUGE-L: {valid_metrics['rougeL']:.4f}, "
+            f"Accuracy: {valid_metrics['token_accuracy']:.2%}, "
+            f"PPL: {valid_metrics['perplexity']:.2f}, "
+            f"Precision: {valid_metrics['precision']:.2%}, "
+            f"Recall: {valid_metrics['recall']:.2%}, "
+            f"F₀.₅: {valid_metrics['f0.5']:.2%}, "
+            f"F₁: {valid_metrics['f1']:.2%}, "
+            f"CER: {valid_metrics['cer']:.2%}, "
+            f"WER: {valid_metrics['wer']:.2%}, "
+            f"SER: {valid_metrics['ser']:.2%}, "
+            f"GLEU: {valid_metrics['gleu']:.2f}"
+        )
