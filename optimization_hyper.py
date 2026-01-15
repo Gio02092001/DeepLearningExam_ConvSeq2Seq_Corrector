@@ -23,17 +23,16 @@ def update_config(trial):
 
     # Suggest new hyperparameter values for the current trial.
     # Optuna will pick values from the specified ranges and distributions.
-    config["learning_rate"] = trial.suggest_loguniform("learning_rate", 0.22, 0.3)
-    config["beamWidth"] = trial.suggest_int("beamWidth", 6, 10)
-    config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.2, 0.35)
-    x = trial.suggest_int("hidden_dim", 500, 950)
+    config["learning_rate"] = trial.suggest_loguniform("learning_rate", 0.3, 0.36)
+    config["p_dropout"] = trial.suggest_uniform("p_dropout", 0.23, 0.35)
+    x = trial.suggest_int("hidden_dim", 700, 950)
     config["hidden_dim"] = x
     config["embedding_dim"] = x
-    config["encoderLayer"] = trial.suggest_int("encoderLayer", 2, 8)
-    config["decoderLayer"] = trial.suggest_int("decoderLayer", 2, 8)
-    config["batchSize"] = trial.suggest_int("batchSize", 32, 128)
-    config['dataSet_probability'] = trial.suggest_uniform("dataSet_probability", 0.14, 0.18)
-    config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 3, 5)
+    config["encoderLayer"] = trial.suggest_int("encoderLayer", 4, 6)
+    config["decoderLayer"] = trial.suggest_int("decoderLayer",6 , 12)
+    config["batchSize"] = trial.suggest_int("batchSize", 45, 75)
+    config['dataSet_probability'] = trial.suggest_uniform("dataSet_probability", 0.1, 0.16)
+    config['dataSet_repetition'] = trial.suggest_int("dataSet_repetition", 3, 4)
     
     with open(CONFIG_PATH, "w") as f:
         yaml.safe_dump(config, f)
@@ -85,7 +84,7 @@ def run_trial(trial):
                     raise optuna.TrialPruned()
 
             # 2. DOPO AVER PROCESSATO LA VALIDAZIONE, CONTROLLA LO STOP ANTICIPATO
-            if current_epoch >= 5:
+            if current_epoch >= 3:
                 print(f"🔴 Early stopping: Trial finished after validation for epoch {current_epoch}")
                 proc.terminate()
                 break  # Esci dal ciclo di lettura dell'output
@@ -102,9 +101,9 @@ if __name__ == "__main__":
     # --- Optuna Study Setup and Execution ---
     study = optuna.create_study(
         direction="maximize",
-        pruner=MedianPruner(n_startup_trials=5, n_warmup_steps=2)
+        pruner=MedianPruner(n_startup_trials=3, n_warmup_steps=1)
     )
-    study.optimize(run_trial, n_trials=50)
+    study.optimize(run_trial, n_trials=100)
 
     # --- Results Reporting ---
     print("Miglior trial:")

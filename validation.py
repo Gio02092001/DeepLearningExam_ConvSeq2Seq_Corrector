@@ -9,6 +9,24 @@ import editdistance
 from sklearn.metrics import precision_recall_fscore_support
 import warnings
 import gc
+import difflib
+
+def trim_and_filter(ids, pad_id, sos_id, eos_id):
+    """Remove PAD/SOS tokens and truncate at first EOS"""
+    out = []
+    for t in ids:
+        if t == pad_id or t == sos_id:
+            continue
+        if t == eos_id:
+            break
+        out.append(t)
+    return out
+
+def lcs_match_count(a, b):
+    """Count matching tokens using Longest Common Subsequence"""
+    sm = difflib.SequenceMatcher(None, a, b)
+    return sum(m.size for m in sm.get_matching_blocks())
+
 
 def validation(model, validation_loader, index_to_target_word, index_to_word, builder, beam_width=5,  device=None):
     """
@@ -75,6 +93,12 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
             # --- Decode and Calculate Batch Metrics ---
             pred_sentences = []
             ref_sentences = []
+            gleu_scores = []
+
+            # ADD THESE THREE LINES:
+            pr_matches = 0
+            pr_ref_len = 0
+            pr_hyp_len = 0
             for pred_ids, ref_ids, inp_ids in zip(predictions, tgt.tolist(), src.tolist()):
                 if builder.bpe == 0:
                     # --- Word-Level Decoding ---
@@ -89,21 +113,35 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
 
                 else:
                     # --- BPE-Level Decoding ---
-                    # Filter special tokens from the predicted IDs.
-                    sentence =[i for i in pred_ids if i not in [builder.targetPAD, builder.targetSOS, builder.targetEOS]]
-                    # Use the BPE tokenizer to decode the list of IDs into a string.
-                    sentence=builder.bpe_tokenizer.decode(sentence)
+                    # Clean IDs: remove PAD/SOS and truncate at first EOS
+                    pred_ids_clean = trim_and_filter(pred_ids, builder.targetPAD, builder.targetSOS, builder.targetEOS)
+                    ref_ids_clean = trim_and_filter(ref_ids, builder.targetPAD, builder.targetSOS, builder.targetEOS)
+                    
+                    # Decode BPE IDs to text strings (using YOUR existing tokenizer)
+                    sentence = builder.bpe_tokenizer.decode(pred_ids_clean).strip()
+                    ref_sentence = builder.bpe_tokenizer.decode(ref_ids_clean).strip()
+                    
+                    # Split into words using simple split (same as you had)
                     words = sentence.split()
-
-                    # Decode reference sentence.
-                    ref_sentence = [i for i in ref_ids if i not in [builder.targetPAD, builder.targetSOS, builder.targetEOS]]
-                    ref_sentence= builder.bpe_tokenizer.decode(ref_sentence)
-                    ref_words=ref_sentence.split()
-
+                    ref_words = ref_sentence.split()
+                
                 # Append the decoded string sentences to the corpus lists.
                 pred_sentences.append(sentence)
                 ref_sentences.append(ref_sentence)
+                
+                if builder.bpe == 1:
+                    # --- Token-level Accuracy via LCS alignment on IDs ---
+                    matches = lcs_match_count(ref_ids_clean, pred_ids_clean)
+                    total_correct_tokens += matches
+                    total_tokens += len(ref_ids_clean)
 
+                    # Accumulate word-level matches for P/R/F1
+                    pr_matches += lcs_match_count(ref_words, words)
+                    pr_ref_len += len(ref_words)
+                    pr_hyp_len += len(words)
+
+                # Calculate GLEU score for the current sentence.
+                gleu_scores.append(sentence_gleu([ref_words], words))
                 # --- Calculate Token-level Accuracy for the current sentence ---
                 min_len = min(len(pred_ids), len(ref_ids))
                 correct = sum((pred_ids[i] == ref_ids[i]) for i in range(min_len))
@@ -173,7 +211,29 @@ def validation(model, validation_loader, index_to_target_word, index_to_word, bu
 
     # Average GLEU score across the corpus.
     gleu = sum(gleu_scores) / len(gleu_scores) if gleu_scores else 0.0
+    
 
+    if builder.bpe == 1:
+        # Final token-level accuracy (as percentage)
+        token_accuracy = (total_correct_tokens / total_tokens if total_tokens > 0 else 0.0)
+
+        # Final perplexity.
+        ppl = math.exp(total_loss / total_ppl_tokens) if total_ppl_tokens > 0 else float('inf')
+
+        # --- Word-level Precision/Recall/F1/F0.5 via LCS ---
+        precision = pr_matches / pr_hyp_len if pr_hyp_len > 0 else 0.0
+        recall = pr_matches / pr_ref_len if pr_ref_len > 0 else 0.0
+        f1 = 2 * precision * recall / (precision + recall + 1e-8) if (precision + recall) > 0 else 0.0
+        f05 = (1.25 * precision * recall) / (0.25 * precision + recall + 1e-8) if (precision + recall) > 0 else 0.0
+
+        # Character Error Rate (CER), Word Error Rate (WER), and Sentence Error Rate (SER).
+        cer = jiwer.cer(all_references, all_hypotheses)
+        wer = jiwer.wer(all_references, all_hypotheses)
+        ser = sum(int(h != r) for h, r in zip(all_hypotheses, all_references)) / len(
+        all_references) if all_references else 0.0
+
+        # Average GLEU score across the corpus (as percentage)
+        gleu = (sum(gleu_scores) / len(gleu_scores) if gleu_scores else 0.0)
     return {
         'bleu': bleu,
         'chrf': chrf,

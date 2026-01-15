@@ -224,7 +224,7 @@ def train(model, optimizer, scheduler, train_data, builder, word_dict, renormali
 
             # Calculate the loss.
             loss = loss_fn(logits_flat, target_flat)
-            writer.add_scalar('Loss/train', loss.item(), global_step=global_step)
+            #writer.add_scalar('Loss/train', loss.item(), global_step=global_step)
             writer.flush()
 
             # Backward pass

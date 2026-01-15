@@ -68,11 +68,11 @@ def trova_migliori_configurazioni(models_dir):
         print(f"📄 File di Configurazione: {result['path']}")
         print("\n--- Contenuto di config.yaml: ---")
         # Usa pprint per una stampa più leggibile del dizionario
-        pprint(result['config'])
+        print(result['config'])
         print("-" * 40)
 
 
 if __name__ == '__main__':
     # Percorso della directory principale che contiene tutte le cartelle dei modelli
-    main_models_directory = '/data01/dl24giocar/DeepLearningExam_ConvSeq2Seq_Corrector/models'
+    main_models_directory = '/data01/dl24giocar/DeepLearningExam_ConvSeq2Seq_Corrector/models/BPETokenization/20KBPETokenization/BigRange'
     trova_migliori_configurazioni(main_models_directory)
