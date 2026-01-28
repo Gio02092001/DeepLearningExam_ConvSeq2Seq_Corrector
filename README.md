@@ -24,7 +24,7 @@ Getting Started
 Follow these steps to set up and run the project locally.
 Prerequisites
 
-    Python 3.8+
+    Python 3.10.12
 
     pip package manager
 
