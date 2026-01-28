@@ -307,6 +307,10 @@ This project was developed with assistance from various AI-powered tools for deb
 
 *Note: All AI-generated suggestions were reviewed, tested, and adapted by the author. The core implementation, architectural decisions, and experimental design remain the original work of the author under the supervision of Prof. Paolo Frasconi.*
 
+### Further Details
+
+Further Details can be found under Carlucci_Giovanni_ConvolutionalSeq2Seq_Presentazione.pdf
+
 ## Author
 
 **Giovanni Carlucci** - University of Florence  
